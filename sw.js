@@ -1,8 +1,9 @@
-const CACHE = "life-log-v1";
+const CACHE = "life-log-v2";
 const ASSETS = [
   "/life-tracker/",
   "/life-tracker/index.html",
-  "https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=Playfair+Display:wght@400;600&display=swap"
+  "/life-tracker/manifest.json",
+  "/life-tracker/sw.js"
 ];
 
 self.addEventListener("install", e => {

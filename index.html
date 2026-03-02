@@ -223,6 +223,24 @@
 <div class="content" id="tab-log">
   <div class="cat-grid" id="catGrid"></div>
 
+  <!-- Supplement panel (shown when supplement category selected) -->
+  <div id="suppQuickLog" style="display:none;margin-bottom:14px;">
+
+    <!-- Add new supplement -->
+    <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:10px;">Add Supplement</div>
+      <input id="suppName" type="text" placeholder="Name (e.g. Magnesium)"
+        style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:8px;box-sizing:border-box;outline:none;" />
+      <input id="suppDose" type="text" placeholder="Dosage (e.g. 400mg)"
+        style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:10px;box-sizing:border-box;outline:none;" />
+      <button onclick="addSupplement()" style="width:100%;padding:11px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
+    </div>
+
+    <!-- Quick-log list -->
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:10px;">Tap to Log</div>
+    <div id="suppQuickList"></div>
+  </div>
+
   <div class="mic-wrap">
     <button class="mic-btn" id="micBtn" ontouchstart="pressStart(event)" ontouchend="pressEnd(event)" onmousedown="pressStart(event)" onmouseup="pressEnd(event)" onmouseleave="pressEnd(event)">
       <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#A09080" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -272,6 +290,24 @@
   <div id="historyList"></div>
 </div>
 
+<!-- SUPPLEMENTS TAB -->
+<div class="content" id="tab-supplements" style="display:none">
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:16px;">Your Supplement List</div>
+
+  <!-- Add new supplement form -->
+  <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:20px;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:12px;">Add Supplement</div>
+    <input id="suppName" type="text" placeholder="Supplement name (e.g. Magnesium)"
+      style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:8px;box-sizing:border-box;outline:none;" />
+    <input id="suppDose" type="text" placeholder="Dosage (e.g. 400mg, 2 capsules)"
+      style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:12px;box-sizing:border-box;outline:none;" />
+    <button onclick="addSupplement()" style="width:100%;padding:12px;background:#7A5500;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
+  </div>
+
+  <!-- Saved supplements list -->
+  <div id="suppMgmtList"></div>
+</div>
+
 <!-- ANALYZE TAB -->
 <div class="content" id="tab-analyze" style="display:none">
   <p class="analyze-intro">Finds behavioral patterns in the hours before each exercise session and correlates them with your strength, endurance, recovery, and longevity scores.</p>
@@ -312,6 +348,7 @@ const CATEGORIES = {
 const METRICS = ["Strength", "Endurance", "Recovery Feel", "Longevity Investment"];
 
 let entries = [];
+let supplements = [];
 let currentCategory = "sleep";
 let exerciseScores = {};
 let transcript = "";
@@ -322,20 +359,94 @@ let isRecording = false;
 // ── Storage ──────────────────────────────────────────────────────
 function loadEntries() {
   try { entries = JSON.parse(localStorage.getItem("bl_entries") || "[]"); } catch { entries = []; }
+  try { supplements = JSON.parse(localStorage.getItem("bl_supplements") || "[]"); } catch { supplements = []; }
   updateUI();
+  renderSuppMgmt();
 }
 function saveEntries() {
   localStorage.setItem("bl_entries", JSON.stringify(entries));
   updateUI();
 }
+function saveSupplements() {
+  localStorage.setItem("bl_supplements", JSON.stringify(supplements));
+  renderSuppMgmt();
+  renderSuppQuickLog();
+}
+function addSupplement() {
+  const name = document.getElementById("suppName").value.trim();
+  const dose = document.getElementById("suppDose").value.trim();
+  if (!name) return;
+  supplements.push({ id: Date.now(), name, dose });
+  saveSupplements();
+  document.getElementById("suppName").value = "";
+  document.getElementById("suppDose").value = "";
+}
+function deleteSupplement(id) {
+  supplements = supplements.filter(s => s.id !== id);
+  saveSupplements();
+}
+function logSupplement(id) {
+  const s = supplements.find(s => s.id === id);
+  if (!s) return;
+  const note = `${s.name}${s.dose ? " — " + s.dose : ""}`;
+  const extra = document.getElementById("transcriptText").value.trim();
+  const fullNote = extra ? note + ". " + extra : note;
+  entries.unshift({ id: Date.now(), ts: Date.now(), category: "supplement", note: fullNote });
+  saveEntries();
+  document.getElementById("transcriptText").value = "";
+  updateSaveBtn();
+  // Flash feedback
+  const btn = document.getElementById("suppLog_" + id);
+  if (btn) { btn.textContent = "✓ Logged"; btn.style.background = "#5A8F4A"; btn.style.color = "white";
+    setTimeout(() => { btn.textContent = "Log"; btn.style.background = ""; btn.style.color = ""; }, 1500); }
+}
+function renderSuppMgmt() {
+  const el = document.getElementById("suppMgmtList");
+  if (!el) return;
+  if (!supplements.length) {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:#888;font-family:\'DM Mono\',monospace;font-size:12px;">No supplements added yet.</div>';
+    return;
+  }
+  el.innerHTML = supplements.map(s => `
+    <div style="padding:14px 16px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="flex:1;">
+        <div style="font-size:14px;color:#111;margin-bottom:2px;">${s.name}</div>
+        ${s.dose ? `<div style="font-size:12px;color:#666;font-family:'DM Mono',monospace;">${s.dose}</div>` : ""}
+      </div>
+      <button onclick="deleteSupplement(${s.id})" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:18px;padding:2px 6px;-webkit-tap-highlight-color:transparent;">×</button>
+    </div>
+  `).join("");
+}
+function renderSuppQuickLog() {
+  const el = document.getElementById("suppQuickList");
+  if (!el) return;
+  if (!supplements.length) {
+    el.innerHTML = '<div style="font-size:13px;color:#888;font-family:\'DM Mono\',monospace;">No supplements saved yet. Add them in the Supplements tab.</div>';
+    return;
+  }
+  el.innerHTML = supplements.map(s => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:6px;margin-bottom:8px;">
+      <div>
+        <div style="font-size:14px;color:#111;">${s.name}</div>
+        ${s.dose ? `<div style="font-size:11px;color:#666;font-family:'DM Mono',monospace;">${s.dose}</div>` : ""}
+      </div>
+      <button id="suppLog_${s.id}" onclick="logSupplement(${s.id})"
+        style="padding:8px 16px;background:#9C7CBF;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;-webkit-tap-highlight-color:transparent;transition:all 0.2s;">
+        Log
+      </button>
+    </div>
+  `).join("");
+}
 
 // ── Tab switching ─────────────────────────────────────────────────
 function showTab(name) {
-  ["log","history","analyze"].forEach(t => {
-    document.getElementById(`tab-${t}`).style.display = t === name ? "block" : "none";
-    document.querySelectorAll(".tab")[["log","history","analyze"].indexOf(t)].classList.toggle("active", t === name);
+  ["log","history","supplements","analyze"].forEach((t,i) => {
+    const el = document.getElementById("tab-"+t);
+    if (el) el.style.display = t===name?"block":"none";
+    const btn = document.querySelectorAll(".tab")[i];
+    if (btn) btn.classList.toggle("active", t===name);
   });
-  if (name === "history") renderHistory();
+  if (name==="history") renderHistory();
 }
 
 // ── Category picker ───────────────────────────────────────────────
@@ -355,7 +466,9 @@ function selectCat(key) {
   buildCatGrid();
   updateMicStyle();
   document.getElementById("scoresCard").style.display = key === "exercise" ? "block" : "none";
+  document.getElementById("suppQuickLog").style.display = key === "supplement" ? "block" : "none";
   if (key === "exercise") buildScoreRows();
+  if (key === "supplement") renderSuppQuickLog();
 }
 
 // ── Score rows ────────────────────────────────────────────────────
@@ -706,6 +819,7 @@ Be direct and personal. Reference specific entries and dates. If data is too lim
 loadEntries();
 buildCatGrid();
 buildScoreRows();
+renderSuppQuickLog();
 </script>
 </body>
 </html>

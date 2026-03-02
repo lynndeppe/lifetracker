@@ -226,14 +226,65 @@
   <!-- Supplement panel (shown when supplement category selected) -->
   <div id="suppQuickLog" style="display:none;margin-bottom:14px;">
 
-    <!-- Add new supplement -->
+    <!-- Add supplement: scan or search -->
     <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:14px;margin-bottom:12px;">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:10px;">Add Supplement</div>
-      <input id="suppName" type="text" placeholder="Name (e.g. Magnesium)"
-        style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:8px;box-sizing:border-box;outline:none;" />
-      <input id="suppDose" type="text" placeholder="Dosage (e.g. 400mg)"
-        style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:10px;box-sizing:border-box;outline:none;" />
-      <button onclick="addSupplement()" style="width:100%;padding:11px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:12px;">Add Supplement</div>
+
+      <!-- Scan button -->
+      <button onclick="startBarcodeScanner()" style="width:100%;padding:12px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><line x1="21" y1="16" x2="21" y2="21"/><line x1="16" y1="21" x2="21" y2="21"/><line x1="16" y1="16" x2="16" y2="16"/><line x1="11" y1="3" x2="11" y2="8"/><line x1="11" y1="11" x2="11" y2="11"/><line x1="3" y1="11" x2="8" y2="11"/><line x1="11" y1="16" x2="11" y2="21"/></svg>
+        Scan Barcode
+      </button>
+
+      <!-- Camera viewfinder (hidden until scanning) -->
+      <div id="scannerWrap" style="display:none;margin-bottom:10px;position:relative;">
+        <video id="scannerVideo" autoplay playsinline style="width:100%;border-radius:6px;background:#000;max-height:220px;object-fit:cover;"></video>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60%;height:40%;border:2px solid #9C7CBF;border-radius:4px;pointer-events:none;box-shadow:0 0 0 1000px rgba(0,0,0,0.4);"></div>
+        <button onclick="stopBarcodeScanner()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:4px;padding:6px 10px;font-size:12px;cursor:pointer;">✕ Cancel</button>
+        <div id="scanStatus" style="position:absolute;bottom:8px;left:0;right:0;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:white;background:rgba(0,0,0,0.5);padding:4px;">Point camera at barcode</div>
+      </div>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="flex:1;height:1px;background:rgba(0,0,0,0.1);"></div>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">or search</span>
+        <div style="flex:1;height:1px;background:rgba(0,0,0,0.1);"></div>
+      </div>
+
+      <!-- Manual search -->
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input id="suppSearch" type="text" placeholder="Search supplement name..."
+          style="flex:1;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;"
+          onkeydown="if(event.key==='Enter')searchSupplements()" />
+        <button onclick="searchSupplements()" style="padding:10px 14px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;">Search</button>
+      </div>
+
+      <!-- Search results -->
+      <div id="suppSearchResults" style="display:none;"></div>
+
+      <!-- Scanned/found product confirmation -->
+      <div id="suppConfirm" style="display:none;padding:12px;background:rgba(156,124,191,0.08);border:1px solid rgba(156,124,191,0.3);border-radius:6px;margin-top:8px;">
+        <div style="font-size:13px;color:#111;margin-bottom:4px;" id="suppConfirmName"></div>
+        <div style="font-size:11px;color:#666;font-family:'DM Mono',monospace;margin-bottom:10px;" id="suppConfirmDose"></div>
+        <div style="display:flex;gap:8px;">
+          <input id="suppConfirmDoseEdit" type="text" placeholder="Confirm or edit dosage"
+            style="flex:1;padding:8px 10px;border:1px solid rgba(0,0,0,0.1);border-radius:4px;background:white;font-size:13px;font-family:'Georgia',serif;color:#111;outline:none;" />
+          <button onclick="confirmAddSupplement()" style="padding:8px 14px;background:#5A8F4A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;">Add</button>
+          <button onclick="document.getElementById('suppConfirm').style.display='none'" style="padding:8px 10px;background:none;border:1px solid rgba(0,0,0,0.1);border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;color:#666;">✕</button>
+        </div>
+      </div>
+
+      <!-- Manual entry fallback -->
+      <details style="margin-top:10px;">
+        <summary style="font-family:'DM Mono',monospace;font-size:10px;color:#888;cursor:pointer;letter-spacing:1px;">Enter manually instead</summary>
+        <div style="margin-top:10px;">
+          <input id="suppName" type="text" placeholder="Name (e.g. Magnesium)"
+            style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:8px;box-sizing:border-box;outline:none;" />
+          <input id="suppDose" type="text" placeholder="Dosage (e.g. 400mg)"
+            style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:10px;box-sizing:border-box;outline:none;" />
+          <button onclick="addSupplement()" style="width:100%;padding:11px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
+        </div>
+      </details>
     </div>
 
     <!-- Quick-log list -->
@@ -290,24 +341,6 @@
   <div id="historyList"></div>
 </div>
 
-<!-- SUPPLEMENTS TAB -->
-<div class="content" id="tab-supplements" style="display:none">
-  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:#444;text-transform:uppercase;margin-bottom:16px;">Your Supplement List</div>
-
-  <!-- Add new supplement form -->
-  <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:20px;">
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:12px;">Add Supplement</div>
-    <input id="suppName" type="text" placeholder="Supplement name (e.g. Magnesium)"
-      style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:8px;box-sizing:border-box;outline:none;" />
-    <input id="suppDose" type="text" placeholder="Dosage (e.g. 400mg, 2 capsules)"
-      style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:12px;box-sizing:border-box;outline:none;" />
-    <button onclick="addSupplement()" style="width:100%;padding:12px;background:#7A5500;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
-  </div>
-
-  <!-- Saved supplements list -->
-  <div id="suppMgmtList"></div>
-</div>
-
 <!-- ANALYZE TAB -->
 <div class="content" id="tab-analyze" style="display:none">
   <p class="analyze-intro">Finds behavioral patterns in the hours before each exercise session and correlates them with your strength, endurance, recovery, and longevity scores.</p>
@@ -361,7 +394,7 @@ function loadEntries() {
   try { entries = JSON.parse(localStorage.getItem("bl_entries") || "[]"); } catch { entries = []; }
   try { supplements = JSON.parse(localStorage.getItem("bl_supplements") || "[]"); } catch { supplements = []; }
   updateUI();
-  renderSuppMgmt();
+  renderSuppQuickLog();
 }
 function saveEntries() {
   localStorage.setItem("bl_entries", JSON.stringify(entries));
@@ -369,9 +402,124 @@ function saveEntries() {
 }
 function saveSupplements() {
   localStorage.setItem("bl_supplements", JSON.stringify(supplements));
-  renderSuppMgmt();
   renderSuppQuickLog();
 }
+// ── Barcode scanner ───────────────────────────────────────────────
+let scannerStream = null;
+let scannerInterval = null;
+let pendingSuppName = "";
+let pendingSuppDose = "";
+
+async function startBarcodeScanner() {
+  const wrap = document.getElementById("scannerWrap");
+  const video = document.getElementById("scannerVideo");
+  const status = document.getElementById("scanStatus");
+  try {
+    scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = scannerStream;
+    wrap.style.display = "block";
+
+    // Load BarcodeDetector if available
+    if ("BarcodeDetector" in window) {
+      const detector = new BarcodeDetector({ formats: ["ean_13","ean_8","upc_a","upc_e","code_128","code_39"] });
+      scannerInterval = setInterval(async () => {
+        try {
+          const barcodes = await detector.detect(video);
+          if (barcodes.length > 0) {
+            const code = barcodes[0].rawValue;
+            status.textContent = "Found: " + code + " — looking up...";
+            stopBarcodeScanner();
+            await lookupBarcode(code);
+          }
+        } catch {}
+      }, 500);
+    } else {
+      status.textContent = "Auto-scan not supported — enter barcode manually";
+      // Show manual barcode input as fallback
+      const input = document.createElement("input");
+      input.type = "number"; input.placeholder = "Type barcode number";
+      input.style = "width:100%;margin-top:8px;padding:8px;border-radius:4px;border:1px solid #ccc;font-size:14px;";
+      input.onkeydown = async (e) => { if (e.key==="Enter") { stopBarcodeScanner(); await lookupBarcode(input.value.trim()); } };
+      wrap.appendChild(input);
+    }
+  } catch (e) {
+    alert("Camera access denied. Please allow camera access in Chrome settings.");
+  }
+}
+
+function stopBarcodeScanner() {
+  if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
+  if (scannerInterval) { clearInterval(scannerInterval); scannerInterval = null; }
+  document.getElementById("scannerWrap").style.display = "none";
+}
+
+async function lookupBarcode(barcode) {
+  document.getElementById("scanStatus") && (document.getElementById("scanStatus").textContent = "Looking up...");
+  try {
+    const resp = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const data = await resp.json();
+    if (data.status === 1 && data.product) {
+      const p = data.product;
+      const name = p.product_name || p.generic_name || "Unknown Product";
+      const serving = p.serving_size || p.quantity || "";
+      showSuppConfirm(name, serving);
+    } else {
+      showSuppConfirm("", "Product not found — enter manually below");
+    }
+  } catch {
+    showSuppConfirm("", "Lookup failed — enter manually below");
+  }
+}
+
+// ── Supplement search ─────────────────────────────────────────────
+async function searchSupplements() {
+  const query = document.getElementById("suppSearch").value.trim();
+  if (!query) return;
+  const resultsEl = document.getElementById("suppSearchResults");
+  resultsEl.style.display = "block";
+  resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#888;padding:8px;">Searching...</div>';
+  try {
+    const resp = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=5&tagtype_0=categories&tag_contains_0=contains&tag_0=dietary-supplements`);
+    const data = await resp.json();
+    const products = data.products || [];
+    if (!products.length) {
+      resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#888;padding:8px;">No results — try manual entry below.</div>';
+      return;
+    }
+    resultsEl.innerHTML = products.slice(0,5).map(p => {
+      const name = p.product_name || p.generic_name || "Unknown";
+      const serving = p.serving_size || p.quantity || "";
+      return `<div onclick="showSuppConfirm('${name.replace(/'/g,"\\'")}','${serving.replace(/'/g,"\\'")}');document.getElementById('suppSearchResults').style.display='none';"
+        style="padding:10px 12px;border:1px solid rgba(0,0,0,0.08);border-radius:6px;margin-bottom:6px;cursor:pointer;background:white;">
+        <div style="font-size:13px;color:#111;">${name}</div>
+        ${serving ? `<div style="font-size:11px;color:#666;font-family:'DM Mono',monospace;">${serving}</div>` : ""}
+      </div>`;
+    }).join("");
+  } catch {
+    resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#888;padding:8px;">Search failed — try manual entry.</div>';
+  }
+}
+
+function showSuppConfirm(name, dose) {
+  document.getElementById("suppConfirmName").textContent = name;
+  document.getElementById("suppConfirmDose").textContent = dose;
+  document.getElementById("suppConfirmDoseEdit").value = dose;
+  document.getElementById("suppConfirm").style.display = "block";
+  pendingSuppName = name;
+  pendingSuppDose = dose;
+}
+
+function confirmAddSupplement() {
+  const name = pendingSuppName || document.getElementById("suppConfirmName").textContent;
+  const dose = document.getElementById("suppConfirmDoseEdit").value.trim();
+  if (!name) return;
+  supplements.push({ id: Date.now(), name, dose });
+  saveSupplements();
+  document.getElementById("suppConfirm").style.display = "none";
+  document.getElementById("suppSearch").value = "";
+  pendingSuppName = ""; pendingSuppDose = "";
+}
+
 function addSupplement() {
   const name = document.getElementById("suppName").value.trim();
   const dose = document.getElementById("suppDose").value.trim();
@@ -385,57 +533,59 @@ function deleteSupplement(id) {
   supplements = supplements.filter(s => s.id !== id);
   saveSupplements();
 }
-function logSupplement(id) {
-  const s = supplements.find(s => s.id === id);
-  if (!s) return;
-  const note = `${s.name}${s.dose ? " — " + s.dose : ""}`;
+function logCheckedSupplements() {
+  const checked = supplements.filter(s => {
+    const cb = document.getElementById("suppCheck_" + s.id);
+    return cb && cb.checked;
+  });
+  if (!checked.length) return;
   const extra = document.getElementById("transcriptText").value.trim();
-  const fullNote = extra ? note + ". " + extra : note;
-  entries.unshift({ id: Date.now(), ts: Date.now(), category: "supplement", note: fullNote });
+  checked.forEach(s => {
+    const note = `${s.name}${s.dose ? " — " + s.dose : ""}${extra ? ". " + extra : ""}`;
+    entries.unshift({ id: Date.now(), ts: Date.now(), category: "supplement", note });
+  });
   saveEntries();
   document.getElementById("transcriptText").value = "";
   updateSaveBtn();
-  // Flash feedback
-  const btn = document.getElementById("suppLog_" + id);
-  if (btn) { btn.textContent = "✓ Logged"; btn.style.background = "#5A8F4A"; btn.style.color = "white";
-    setTimeout(() => { btn.textContent = "Log"; btn.style.background = ""; btn.style.color = ""; }, 1500); }
-}
-function renderSuppMgmt() {
-  const el = document.getElementById("suppMgmtList");
-  if (!el) return;
-  if (!supplements.length) {
-    el.innerHTML = '<div style="text-align:center;padding:32px;color:#888;font-family:\'DM Mono\',monospace;font-size:12px;">No supplements added yet.</div>';
-    return;
+  // Flash feedback then re-render with all checked again
+  const btn = document.getElementById("suppLogBtn");
+  if (btn) {
+    btn.textContent = `✓ Logged ${checked.length} supplement${checked.length > 1 ? "s" : ""}`;
+    btn.style.background = "#5A8F4A";
+    setTimeout(() => {
+      btn.textContent = "Log Selected";
+      btn.style.background = "#9C7CBF";
+      renderSuppQuickLog();
+    }, 1800);
   }
-  el.innerHTML = supplements.map(s => `
-    <div style="padding:14px 16px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-      <div style="flex:1;">
-        <div style="font-size:14px;color:#111;margin-bottom:2px;">${s.name}</div>
-        ${s.dose ? `<div style="font-size:12px;color:#666;font-family:'DM Mono',monospace;">${s.dose}</div>` : ""}
-      </div>
-      <button onclick="deleteSupplement(${s.id})" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:18px;padding:2px 6px;-webkit-tap-highlight-color:transparent;">×</button>
-    </div>
-  `).join("");
 }
+
 function renderSuppQuickLog() {
   const el = document.getElementById("suppQuickList");
   if (!el) return;
   if (!supplements.length) {
-    el.innerHTML = '<div style="font-size:13px;color:#888;font-family:\'DM Mono\',monospace;">No supplements saved yet. Add them in the Supplements tab.</div>';
+    el.innerHTML = '<div style="font-size:13px;color:#888;font-family:\'DM Mono\',monospace;padding:8px 0;">No supplements saved yet. Use Scan or Search above to add them.</div>';
     return;
   }
-  el.innerHTML = supplements.map(s => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:6px;margin-bottom:8px;">
-      <div>
-        <div style="font-size:14px;color:#111;">${s.name}</div>
-        ${s.dose ? `<div style="font-size:11px;color:#666;font-family:'DM Mono',monospace;">${s.dose}</div>` : ""}
-      </div>
-      <button id="suppLog_${s.id}" onclick="logSupplement(${s.id})"
-        style="padding:8px 16px;background:#9C7CBF;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;-webkit-tap-highlight-color:transparent;transition:all 0.2s;">
-        Log
-      </button>
+  el.innerHTML = `
+    <div style="margin-bottom:10px;">
+      ${supplements.map(s => `
+        <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:6px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+          <input type="checkbox" id="suppCheck_${s.id}" checked
+            style="width:20px;height:20px;accent-color:#9C7CBF;cursor:pointer;flex-shrink:0;" />
+          <div style="flex:1;">
+            <div style="font-size:14px;color:#111;">${s.name}</div>
+            ${s.dose ? `<div style="font-size:11px;color:#666;font-family:'DM Mono',monospace;">${s.dose}</div>` : ""}
+          </div>
+          <button onclick="event.preventDefault();deleteSupplement(${s.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:2px 4px;-webkit-tap-highlight-color:transparent;">×</button>
+        </label>
+      `).join("")}
     </div>
-  `).join("");
+    <button id="suppLogBtn" onclick="logCheckedSupplements()"
+      style="width:100%;padding:13px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;-webkit-tap-highlight-color:transparent;">
+      Log Selected
+    </button>
+  `;
 }
 
 // ── Tab switching ─────────────────────────────────────────────────

@@ -20,7 +20,7 @@
     --border: rgba(0,0,0,0.15);
     --text: #111111;
     --muted: #444444;
-    --dim: #888888;
+    --dim: #555555;
     --gold: #7A5500;
     --sleep: #7C9CBF;
     --food: #8BAF7C;
@@ -219,8 +219,8 @@
 
 <div class="tabs">
   <button class="tab active mono" onclick="showTab('log')">Log Entry</button>
-  <button class="tab mono" onclick="showTab('history')">History</button>
   <button class="tab mono" onclick="showTab('analyze')">Analyze</button>
+  <button class="tab mono" onclick="showTab('history')">History</button>
 </div>
 
 <!-- LOG TAB -->
@@ -251,7 +251,7 @@
       <!-- Divider -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <div style="flex:1;height:1px;background:rgba(0,0,0,0.1);"></div>
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">or search</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">or search</span>
         <div style="flex:1;height:1px;background:rgba(0,0,0,0.1);"></div>
       </div>
 
@@ -269,18 +269,18 @@
       <!-- Scanned/found product confirmation -->
       <div id="suppConfirm" style="display:none;padding:12px;background:rgba(156,124,191,0.08);border:1px solid rgba(156,124,191,0.3);border-radius:6px;margin-top:8px;">
         <div style="font-size:13px;color:#111;margin-bottom:4px;" id="suppConfirmName"></div>
-        <div style="font-size:11px;color:#666;font-family:'DM Mono',monospace;margin-bottom:10px;" id="suppConfirmDose"></div>
+        <div style="font-size:11px;color:#444;font-family:'DM Mono',monospace;margin-bottom:10px;" id="suppConfirmDose"></div>
         <div style="display:flex;gap:8px;">
           <input id="suppConfirmDoseEdit" type="text" placeholder="Confirm or edit dosage"
             style="flex:1;padding:8px 10px;border:1px solid rgba(0,0,0,0.1);border-radius:4px;background:white;font-size:13px;font-family:'Georgia',serif;color:#111;outline:none;" />
           <button onclick="confirmAddSupplement()" style="padding:8px 14px;background:#5A8F4A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;">Add</button>
-          <button onclick="document.getElementById('suppConfirm').style.display='none'" style="padding:8px 10px;background:none;border:1px solid rgba(0,0,0,0.1);border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;color:#666;">✕</button>
+          <button onclick="document.getElementById('suppConfirm').style.display='none'" style="padding:8px 10px;background:none;border:1px solid rgba(0,0,0,0.1);border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;color:#444;">✕</button>
         </div>
       </div>
 
       <!-- Manual entry fallback -->
       <details style="margin-top:10px;">
-        <summary style="font-family:'DM Mono',monospace;font-size:10px;color:#888;cursor:pointer;letter-spacing:1px;">Enter manually instead</summary>
+        <summary style="font-family:'DM Mono',monospace;font-size:10px;color:#555;cursor:pointer;letter-spacing:1px;">Enter manually instead</summary>
         <div style="margin-top:10px;">
           <input id="suppName" type="text" placeholder="Name (e.g. Magnesium)"
             style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:8px;box-sizing:border-box;outline:none;" />
@@ -359,8 +359,8 @@
       oninput="document.getElementById('sliderLabel').textContent=this.value+' hour'+(this.value==1?'':'s')"
       style="width:100%;accent-color:#7A5500;height:4px;">
     <div style="display:flex;justify-content:space-between;margin-top:4px;">
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;">1 hr</span>
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;">48 hrs</span>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:#555;">1 hr</span>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:#555;">48 hrs</span>
     </div>
   </div>
 
@@ -481,13 +481,13 @@ async function searchSupplements() {
   if (!query) return;
   const resultsEl = document.getElementById("suppSearchResults");
   resultsEl.style.display = "block";
-  resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#888;padding:8px;">Searching...</div>';
+  resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#555;padding:8px;">Searching...</div>';
   try {
     const resp = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=5&tagtype_0=categories&tag_contains_0=contains&tag_0=dietary-supplements`);
     const data = await resp.json();
     const products = data.products || [];
     if (!products.length) {
-      resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#888;padding:8px;">No results — try manual entry below.</div>';
+      resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#555;padding:8px;">No results — try manual entry below.</div>';
       return;
     }
     resultsEl.innerHTML = products.slice(0,5).map(p => {
@@ -496,11 +496,11 @@ async function searchSupplements() {
       return `<div onclick="showSuppConfirm('${name.replace(/'/g,"\\'")}','${serving.replace(/'/g,"\\'")}');document.getElementById('suppSearchResults').style.display='none';"
         style="padding:10px 12px;border:1px solid rgba(0,0,0,0.08);border-radius:6px;margin-bottom:6px;cursor:pointer;background:white;">
         <div style="font-size:13px;color:#111;">${name}</div>
-        ${serving ? `<div style="font-size:11px;color:#666;font-family:'DM Mono',monospace;">${serving}</div>` : ""}
+        ${serving ? `<div style="font-size:11px;color:#444;font-family:'DM Mono',monospace;">${serving}</div>` : ""}
       </div>`;
     }).join("");
   } catch {
-    resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#888;padding:8px;">Search failed — try manual entry.</div>';
+    resultsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:#555;padding:8px;">Search failed — try manual entry.</div>';
   }
 }
 
@@ -568,7 +568,7 @@ function renderSuppQuickLog() {
   const el = document.getElementById("suppQuickList");
   if (!el) return;
   if (!supplements.length) {
-    el.innerHTML = '<div style="font-size:13px;color:#888;font-family:\'DM Mono\',monospace;padding:8px 0;">No supplements saved yet. Use Scan or Search above to add them.</div>';
+    el.innerHTML = '<div style="font-size:13px;color:#555;font-family:\'DM Mono\',monospace;padding:8px 0;">No supplements saved yet. Use Scan or Search above to add them.</div>';
     return;
   }
   el.innerHTML = `
@@ -579,7 +579,7 @@ function renderSuppQuickLog() {
             style="width:20px;height:20px;accent-color:#9C7CBF;cursor:pointer;flex-shrink:0;" />
           <div style="flex:1;">
             <div style="font-size:14px;color:#111;">${s.name}</div>
-            ${s.dose ? `<div style="font-size:11px;color:#666;font-family:'DM Mono',monospace;">${s.dose}</div>` : ""}
+            ${s.dose ? `<div style="font-size:11px;color:#444;font-family:'DM Mono',monospace;">${s.dose}</div>` : ""}
           </div>
           <button onclick="event.preventDefault();deleteSupplement(${s.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:2px 4px;-webkit-tap-highlight-color:transparent;">×</button>
         </label>
@@ -594,7 +594,7 @@ function renderSuppQuickLog() {
 
 // ── Tab switching ─────────────────────────────────────────────────
 function showTab(name) {
-  ["log","history","supplements","analyze"].forEach((t,i) => {
+  ["log","analyze","history","supplements"].forEach((t,i) => {
     const el = document.getElementById("tab-"+t);
     if (el) el.style.display = t===name?"block":"none";
     const btn = document.querySelectorAll(".tab")[i];

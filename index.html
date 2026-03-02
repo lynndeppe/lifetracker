@@ -12,12 +12,12 @@
 
   :root {
     --bg: #F5F0E8;
-    --card: rgba(0,0,0,0.04);
-    --border: rgba(0,0,0,0.1);
-    --text: #2A2018;
-    --muted: #7A6A5A;
-    --dim: #AAA090;
-    --gold: #8B6914;
+    --card: rgba(0,0,0,0.05);
+    --border: rgba(0,0,0,0.15);
+    --text: #111111;
+    --muted: #444444;
+    --dim: #888888;
+    --gold: #7A5500;
     --sleep: #7C9CBF;
     --food: #8BAF7C;
     --stress: #BF9C7C;
@@ -358,6 +358,7 @@ function buildScoreRows() {
 function setScore(metric, val) {
   exerciseScores[metric] = val;
   buildScoreRows();
+  updateSaveBtn();
 }
 
 // ── Voice ─────────────────────────────────────────────────────────
@@ -484,7 +485,8 @@ function clearTranscript() {
 function updateSaveBtn() {
   const btn = document.getElementById("saveBtn");
   const val = document.getElementById("transcriptText").value.trim();
-  if (val) {
+  const hasScores = Object.keys(exerciseScores).length > 0;
+  if (val || (currentCategory === "exercise" && hasScores)) {
     btn.classList.add("ready");
     btn.classList.remove("saved");
     btn.textContent = "Save Entry";
@@ -506,7 +508,8 @@ function hideVoiceError() {
 // ── Save entry ────────────────────────────────────────────────────
 function saveEntry() {
   const text = document.getElementById("transcriptText").value.trim();
-  if (!text) return;
+  const hasScores = Object.keys(exerciseScores).length > 0;
+  if (!text && !(currentCategory === "exercise" && hasScores)) return;
 
   const entry = {
     id: Date.now(), ts: Date.now(),
@@ -646,7 +649,7 @@ Analyze and provide:
 Be direct, specific, personal. Reference their actual entries. No generic advice. If data is limited, say so but give what insight you can.`;
 
   try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    const resp = await fetch("https://green-dawn-cf6c.lynndeppe.workers.dev/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

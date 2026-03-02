@@ -974,11 +974,6 @@ loadEntries();
 buildCatGrid();
 buildScoreRows();
 renderSuppQuickLog();
-
-// Register service worker for PWA
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/life-tracker/sw.js").catch(() => {});
-}
 </script>
 </body>
 </html>

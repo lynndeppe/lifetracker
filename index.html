@@ -274,9 +274,25 @@
 
 <!-- ANALYZE TAB -->
 <div class="content" id="tab-analyze" style="display:none">
-  <p class="analyze-intro">Analysis reads across all your entries to find correlations between behaviors and strength, endurance, recovery, and longevity. The more you log, the sharper the insight.</p>
-  <button class="analyze-btn disabled mono" id="analyzeBtn" onclick="runAnalysis()">Log Entries First</button>
-  <div id="analyzingMsg" style="display:none" class="analyzing-msg">Reading patterns across your data...</div>
+  <p class="analyze-intro">Finds behavioral patterns in the hours before each exercise session and correlates them with your strength, endurance, recovery, and longevity scores.</p>
+
+  <!-- Slider -->
+  <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:#444;text-transform:uppercase;letter-spacing:1px;">Lookback Window</span>
+      <span style="font-family:'DM Mono',monospace;font-size:14px;color:#111;font-weight:500;" id="sliderLabel">48 hours</span>
+    </div>
+    <input type="range" id="lookbackSlider" min="1" max="48" value="48"
+      oninput="document.getElementById('sliderLabel').textContent=this.value+' hour'+(this.value==1?'':'s')"
+      style="width:100%;accent-color:#7A5500;height:4px;">
+    <div style="display:flex;justify-content:space-between;margin-top:4px;">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;">1 hr</span>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:#888;">48 hrs</span>
+    </div>
+  </div>
+
+  <button class="analyze-btn disabled mono" id="analyzeBtn" onclick="runAnalysis()">Log Exercise Entries First</button>
+  <div id="analyzingMsg" style="display:none" class="analyzing-msg">Analyzing patterns before your workouts...</div>
   <div id="analysisError" style="display:none" class="error-banner"></div>
   <div id="analysisCard" style="display:none" class="analysis-card">
     <div class="analysis-title mono">Analysis Report</div>
@@ -602,51 +618,66 @@ function updateUI() {
 
   // Analyze button
   const aBtn = document.getElementById("analyzeBtn");
-  if (entries.length > 0) {
+  const hasExercise = entries.some(e => e.category === "exercise" && e.scores);
+  if (hasExercise) {
     aBtn.classList.add("ready");
     aBtn.classList.remove("disabled");
-    aBtn.textContent = `Analyze  ${entries.length} Entries`;
+    aBtn.textContent = "Analyze My Patterns";
   } else {
     aBtn.classList.remove("ready");
     aBtn.classList.add("disabled");
-    aBtn.textContent = "Log Entries First";
+    aBtn.textContent = "Log Exercise Entries First";
   }
 }
 
 // ── Analysis ──────────────────────────────────────────────────────
 async function runAnalysis() {
-  if (entries.length === 0) return;
+  const exerciseEntries = entries.filter(e => e.category === "exercise" && e.scores);
+  if (!exerciseEntries.length) return;
+
+  const hoursBack = parseInt(document.getElementById("lookbackSlider").value);
+  const msBack = hoursBack * 60 * 60 * 1000;
 
   document.getElementById("analyzeBtn").textContent = "Analyzing...";
   document.getElementById("analyzingMsg").style.display = "block";
   document.getElementById("analysisCard").style.display = "none";
   document.getElementById("analysisError").style.display = "none";
 
-  const last = entries.slice(0, 80);
+  // For each exercise entry, find all behavior entries in the lookback window before it
+  const behaviorCategories = ["sleep","food","stress","substance","supplement"];
+  const exerciseWindows = exerciseEntries.map(ex => {
+    const windowStart = ex.ts - msBack;
+    const behaviors = entries.filter(e =>
+      behaviorCategories.includes(e.category) &&
+      e.ts >= windowStart &&
+      e.ts < ex.ts
+    );
+    return { exercise: ex, behaviors };
+  });
+
   const prompt = `You are an expert in human performance, longevity, and behavioral pattern analysis.
 
-The user has voice-logged the following behavioral entries (newest first). Each entry has a timestamp, category, and their verbalized description. Exercise entries also have subjective scores (1-5) for Strength, Endurance, Recovery Feel, and Longevity Investment.
+The user tracks their daily behaviors and exercise performance. Below are their exercise sessions with scores, and all behavioral entries (sleep, food, stress, substances, supplements) logged in the ${hoursBack} hours BEFORE each session.
 
-ENTRIES:
-${last.map(e => {
-  const dateStr = new Date(e.ts).toLocaleString();
-  let line = `[${dateStr}] [${e.category.toUpperCase()}] ${e.note}`;
-  if (e.scores) {
-    const s = Object.entries(e.scores).map(([k, v]) => `${k}: ${v}/5`).join(", ");
-    line += ` | Scores: ${s}`;
-  }
-  return line;
-}).join("\n")}
+${exerciseWindows.map((w, i) => {
+  const exDate = new Date(w.exercise.ts).toLocaleString();
+  const scores = w.exercise.scores ? Object.entries(w.exercise.scores).map(([k,v]) => `${k}: ${v}/5`).join(", ") : "no scores";
+  const note = w.exercise.note || "no note";
+  const behaviors = w.behaviors.length
+    ? w.behaviors.map(b => `  [${new Date(b.ts).toLocaleString()}] [${b.category.toUpperCase()}] ${b.note}`).join("\n")
+    : "  (no behavioral entries logged in this window)";
+  return `SESSION ${i+1} — ${exDate}\nExercise note: ${note}\nScores: ${scores}\nBehaviors in the ${hoursBack}hrs before:\n${behaviors}`;
+}).join("\n\n")}
 
-Analyze and provide:
-1. KEY PATTERNS — behavioral patterns correlated with better or worse performance/recovery
-2. STRENGTH SIGNALS — what behaviors precede higher strength ratings
-3. ENDURANCE SIGNALS — what behaviors correlate with endurance
-4. RECOVERY INSIGHTS — sleep, nutrition, substance patterns affecting recovery
-5. LONGEVITY FLAGS — behaviors worth flagging for long-term health
-6. TOP 3 ACTIONABLE RECOMMENDATIONS — specific, personal, based only on their data
+Based on this data, analyze:
+1. KEY PATTERNS — which behaviors in the ${hoursBack} hours before a session correlate with better or worse scores
+2. STRENGTH SIGNALS — what preceded higher strength ratings
+3. ENDURANCE SIGNALS — what preceded higher endurance ratings
+4. RECOVERY SIGNALS — what sleep, food, substance patterns preceded better recovery feel
+5. LONGEVITY FLAGS — any behaviors worth flagging for long-term health
+6. TOP 3 RECOMMENDATIONS — specific, personal, actionable, based only on their data
 
-Be direct, specific, personal. Reference their actual entries. No generic advice. If data is limited, say so but give what insight you can.`;
+Be direct and personal. Reference specific entries and dates. If data is too limited for patterns, say so clearly but give what insight you can.`;
 
   try {
     const resp = await fetch("https://green-dawn-cf6c.lynndeppe.workers.dev/", {
@@ -654,7 +685,7 @@ Be direct, specific, personal. Reference their actual entries. No generic advice
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1200,
+        max_tokens: 1500,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -668,7 +699,7 @@ Be direct, specific, personal. Reference their actual entries. No generic advice
   }
 
   document.getElementById("analyzingMsg").style.display = "none";
-  updateUI(); // restore button text
+  updateUI();
 }
 
 // ── Init ──────────────────────────────────────────────────────────

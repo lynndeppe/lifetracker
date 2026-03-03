@@ -328,10 +328,26 @@
     <details style="margin-top:10px;">
       <summary style="font-family:'DM Mono',monospace;font-size:10px;color:#555;cursor:pointer;letter-spacing:1px;">Enter manually instead</summary>
       <div style="margin-top:10px;">
-        <input id="suppName" type="text" placeholder="Name (e.g. Magnesium)"
-          style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:8px;box-sizing:border-box;outline:none;" />
-        <input id="suppDose" type="text" placeholder="Dosage (e.g. 400mg)"
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Name</div>
+        <input id="suppName" type="text" placeholder="Supplement name (e.g. Magnesium)"
           style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;margin-bottom:10px;box-sizing:border-box;outline:none;" />
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Qty</div>
+            <input id="suppQtyAdd" type="text" maxlength="2" value="1" placeholder="1"
+              style="padding:10px 8px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:40px;text-align:center;" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Description</div>
+            <input id="suppDescAdd" type="text" placeholder="optional note"
+              style="padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:100%;box-sizing:border-box;" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Dose</div>
+            <input id="suppDose" type="text" maxlength="7" placeholder="400mg"
+              style="padding:10px 8px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:68px;" />
+          </div>
+        </div>
         <button onclick="addSupplement()" style="width:100%;padding:11px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
       </div>
     </details>
@@ -528,11 +544,15 @@ function confirmAddSupplement() {
 function addSupplement() {
   const name = document.getElementById("suppName").value.trim();
   const dose = document.getElementById("suppDose").value.trim();
+  const qty  = document.getElementById("suppQtyAdd")?.value.trim() || "1";
+  const desc = document.getElementById("suppDescAdd")?.value.trim() || "";
   if (!name) return;
-  supplements.push({ id: Date.now(), name, dose });
+  supplements.push({ id: Date.now(), name, dose, qty, desc });
   saveSupplements();
   document.getElementById("suppName").value = "";
   document.getElementById("suppDose").value = "";
+  if (document.getElementById("suppQtyAdd")) document.getElementById("suppQtyAdd").value = "1";
+  if (document.getElementById("suppDescAdd")) document.getElementById("suppDescAdd").value = "";
 }
 function deleteSupplement(id) {
   supplements = supplements.filter(s => s.id !== id);
@@ -594,12 +614,12 @@ function renderSuppQuickLog() {
           <div style="display:flex;gap:6px;align-items:center;">
             <div style="display:flex;flex-direction:column;gap:2px;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Qty</span>
-              <input id="suppQty_${s.id}" type="text" maxlength="2" value="1"
+              <input id="suppQty_${s.id}" type="text" maxlength="2" value="${s.qty || "1"}"
                 style="${inputStyle}width:32px;text-align:center;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Description</span>
-              <input id="suppDesc_${s.id}" type="text" placeholder="optional note"
+              <input id="suppDesc_${s.id}" type="text" placeholder="optional note" value="${s.desc || ""}"
                 style="${inputStyle}width:100%;box-sizing:border-box;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;">

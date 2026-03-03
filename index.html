@@ -434,27 +434,49 @@ async function startBarcodeScanner() {
   status.textContent = "Starting camera...";
 
   try {
+    // Get camera stream with explicit autofocus constraints
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        focusMode: { ideal: "continuous" },
+        advanced: [{ focusMode: "continuous" }]
+      }
+    });
+
+    video.srcObject = scannerStream;
+    await video.play();
+
+    // Apply autofocus via track constraints after stream starts
+    const track = scannerStream.getVideoTracks()[0];
+    try {
+      await track.applyConstraints({
+        advanced: [{ focusMode: "continuous" }]
+      });
+    } catch(e) { /* not all devices support this, ignore */ }
+
     if (typeof ZXing === "undefined") {
-      status.textContent = "Scanner library loading, please wait...";
+      status.textContent = "Scanner library loading...";
       await new Promise(r => setTimeout(r, 2000));
     }
 
     const hints = new Map();
-    const formats = [
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
       ZXing.BarcodeFormat.EAN_13,
       ZXing.BarcodeFormat.EAN_8,
       ZXing.BarcodeFormat.UPC_A,
       ZXing.BarcodeFormat.UPC_E,
       ZXing.BarcodeFormat.CODE_128,
       ZXing.BarcodeFormat.CODE_39,
-    ];
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+    ]);
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
-    zxingReader = new ZXing.BrowserMultiFormatReader(hints);
-    status.textContent = "Point camera at barcode";
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 500);
+    status.textContent = "Hold steady — point at barcode";
 
-    await zxingReader.decodeFromVideoDevice(null, video, async (result, err) => {
+    // Use decodeFromStream so we control the stream ourselves
+    zxingReader.decodeFromStream(scannerStream, video, async (result, err) => {
       if (result) {
         const code = result.getText();
         status.textContent = "Found: " + code + " — looking up...";
@@ -464,14 +486,17 @@ async function startBarcodeScanner() {
     });
 
   } catch (e) {
-    status.textContent = "Camera error — enter barcode manually below";
+    status.textContent = "Camera error — use manual entry below";
+    wrap.style.display = "none";
     console.error(e);
   }
 }
 
 function stopBarcodeScanner() {
-  if (zxingReader) { zxingReader.reset(); zxingReader = null; }
-  document.getElementById("scannerWrap").style.display = "none";
+  if (zxingReader) { try { zxingReader.reset(); } catch(e){} zxingReader = null; }
+  if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
+  const wrap = document.getElementById("scannerWrap");
+  if (wrap) wrap.style.display = "none";
 }
 
 async function lookupBarcode(barcode) {

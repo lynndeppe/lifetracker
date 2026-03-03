@@ -208,6 +208,7 @@
     body { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
   }
 </style>
+<script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 </head>
 <body>
 
@@ -410,7 +411,7 @@ function saveSupplements() {
 }
 // ── Barcode scanner ───────────────────────────────────────────────
 let scannerStream = null;
-let scannerInterval = null;
+let zxingReader = null;
 let pendingSuppName = "";
 let pendingSuppDose = "";
 
@@ -418,42 +419,47 @@ async function startBarcodeScanner() {
   const wrap = document.getElementById("scannerWrap");
   const video = document.getElementById("scannerVideo");
   const status = document.getElementById("scanStatus");
-  try {
-    scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-    video.srcObject = scannerStream;
-    wrap.style.display = "block";
+  wrap.style.display = "block";
+  status.textContent = "Starting camera...";
 
-    // Load BarcodeDetector if available
-    if ("BarcodeDetector" in window) {
-      const detector = new BarcodeDetector({ formats: ["ean_13","ean_8","upc_a","upc_e","code_128","code_39"] });
-      scannerInterval = setInterval(async () => {
-        try {
-          const barcodes = await detector.detect(video);
-          if (barcodes.length > 0) {
-            const code = barcodes[0].rawValue;
-            status.textContent = "Found: " + code + " — looking up...";
-            stopBarcodeScanner();
-            await lookupBarcode(code);
-          }
-        } catch {}
-      }, 500);
-    } else {
-      status.textContent = "Auto-scan not supported — enter barcode manually";
-      // Show manual barcode input as fallback
-      const input = document.createElement("input");
-      input.type = "number"; input.placeholder = "Type barcode number";
-      input.style = "width:100%;margin-top:8px;padding:8px;border-radius:4px;border:1px solid #ccc;font-size:14px;";
-      input.onkeydown = async (e) => { if (e.key==="Enter") { stopBarcodeScanner(); await lookupBarcode(input.value.trim()); } };
-      wrap.appendChild(input);
+  try {
+    if (typeof ZXing === "undefined") {
+      status.textContent = "Scanner library loading, please wait...";
+      await new Promise(r => setTimeout(r, 2000));
     }
+
+    const hints = new Map();
+    const formats = [
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39,
+    ];
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+    status.textContent = "Point camera at barcode";
+
+    await zxingReader.decodeFromVideoDevice(null, video, async (result, err) => {
+      if (result) {
+        const code = result.getText();
+        status.textContent = "Found: " + code + " — looking up...";
+        stopBarcodeScanner();
+        await lookupBarcode(code);
+      }
+    });
+
   } catch (e) {
-    alert("Camera access denied. Please allow camera access in Chrome settings.");
+    status.textContent = "Camera error — enter barcode manually below";
+    console.error(e);
   }
 }
 
 function stopBarcodeScanner() {
-  if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
-  if (scannerInterval) { clearInterval(scannerInterval); scannerInterval = null; }
+  if (zxingReader) { zxingReader.reset(); zxingReader = null; }
   document.getElementById("scannerWrap").style.display = "none";
 }
 

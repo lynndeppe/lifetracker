@@ -549,15 +549,17 @@ function logCheckedSupplements() {
     return cb && cb.checked;
   });
   if (!checked.length) return;
-  const extra = document.getElementById("transcriptText").value.trim();
   checked.forEach(s => {
-    const note = `${s.name}${s.dose ? " — " + s.dose : ""}${extra ? ". " + extra : ""}`;
+    const qty  = (document.getElementById("suppQty_"  + s.id)?.value.trim()) || "1";
+    const desc = (document.getElementById("suppDesc_" + s.id)?.value.trim()) || "";
+    const dose = (document.getElementById("suppDoseLog_" + s.id)?.value.trim()) || s.dose || "";
+    let note = `${s.name}`;
+    if (qty && qty !== "1") note += ` × ${qty}`;
+    if (dose) note += ` — ${dose}`;
+    if (desc) note += `. ${desc}`;
     entries.unshift({ id: Date.now(), ts: Date.now(), category: "supplement", note });
   });
   saveEntries();
-  document.getElementById("transcriptText").value = "";
-  updateSaveBtn();
-  // Flash feedback then re-render with all checked again
   const btn = document.getElementById("suppLogBtn");
   if (btn) {
     btn.textContent = `✓ Logged ${checked.length} supplement${checked.length > 1 ? "s" : ""}`;
@@ -577,18 +579,43 @@ function renderSuppQuickLog() {
     el.innerHTML = '<div style="font-size:13px;color:#555;font-family:\'DM Mono\',monospace;padding:8px 0;">No supplements saved yet. Use Scan or Search above to add them.</div>';
     return;
   }
+
+  const inputStyle = "padding:6px 8px;border:1px solid rgba(0,0,0,0.12);border-radius:4px;background:white;font-size:13px;color:#111;font-family:'Georgia',serif;outline:none;";
+
   el.innerHTML = `
     <div style="margin-bottom:10px;">
       ${supplements.map(s => `
-        <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:6px;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-          <input type="checkbox" id="suppCheck_${s.id}" checked
-            style="width:20px;height:20px;accent-color:#9C7CBF;cursor:pointer;flex-shrink:0;" />
-          <div style="flex:1;">
-            <div style="font-size:14px;color:#111;">${s.name}</div>
-            ${s.dose ? `<div style="font-size:11px;color:#444;font-family:'DM Mono',monospace;">${s.dose}</div>` : ""}
+        <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:6px;margin-bottom:8px;padding:10px 12px;">
+
+          <!-- Row 1: checkbox + name + delete -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <input type="checkbox" id="suppCheck_${s.id}" checked
+              style="width:20px;height:20px;accent-color:#9C7CBF;cursor:pointer;flex-shrink:0;" />
+            <div style="flex:1;font-size:14px;color:#111;font-weight:500;">${s.name}</div>
+            <button onclick="deleteSupplement(${s.id})" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:16px;padding:2px 4px;-webkit-tap-highlight-color:transparent;">×</button>
           </div>
-          <button onclick="event.preventDefault();deleteSupplement(${s.id})" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:2px 4px;-webkit-tap-highlight-color:transparent;">×</button>
-        </label>
+
+          <!-- Row 2: qty + description + dose -->
+          <div style="display:flex;gap:6px;align-items:center;">
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Qty</span>
+              <input id="suppQty_${s.id}" type="text" maxlength="2" value="1"
+                style="${inputStyle}width:32px;text-align:center;" />
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Description</span>
+              <input id="suppDesc_${s.id}" type="text" placeholder="optional note"
+                style="${inputStyle}width:100%;box-sizing:border-box;" />
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Dose</span>
+              <input id="suppDoseLog_${s.id}" type="text" maxlength="7" value="${s.dose || ""}"
+                placeholder="e.g. 400mg"
+                style="${inputStyle}width:68px;" />
+            </div>
+          </div>
+
+        </div>
       `).join("")}
     </div>
     <button id="suppLogBtn" onclick="logCheckedSupplements()"

@@ -1482,16 +1482,19 @@ function stravaImportAsFocalEvent(activityId) {
 }
 
 // Handle OAuth callback code in URL
-(function() {
+window.addEventListener("DOMContentLoaded", function() {
   const params = new URLSearchParams(window.location.search);
+  console.log("URL params on load:", window.location.search);
   const code = params.get("code");
   const scope = params.get("scope");
-  // Only handle if this looks like a Strava callback (has code + scope)
-  if (!code || !scope) return;
+  console.log("code:", code, "scope:", scope);
+  if (!code) return;
+  console.log("Strava callback detected, exchanging code...");
   window.history.replaceState({}, "", window.location.pathname);
   fetch(WORKER + "?service=strava-auth&code=" + code)
     .then(r => r.json())
     .then(data => {
+      console.log("Strava auth response:", JSON.stringify(data));
       if (data.access_token) {
         localStorage.setItem("strava_token", JSON.stringify({
           access_token: data.access_token,
@@ -1505,10 +1508,12 @@ function stravaImportAsFocalEvent(activityId) {
         document.getElementById("scoresCard").style.display = "block";
         document.getElementById("stravaSection").style.display = "block";
         stravaCheckToken();
+      } else {
+        console.error("No access_token in response:", JSON.stringify(data));
       }
     })
     .catch(e => console.error("Strava auth error:", e));
-})();
+});
 
 // ── Init ──────────────────────────────────────────────────────────
 loadEntries();

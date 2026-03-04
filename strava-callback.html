@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecting Strava...</title>
+<style>
+  body { font-family: 'Georgia', serif; background: #F5F0E8; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .box { text-align: center; padding: 40px 24px; }
+  .icon { font-size: 48px; margin-bottom: 16px; }
+  .title { font-size: 20px; color: #7A5500; margin-bottom: 8px; }
+  .sub { font-family: 'DM Mono', monospace; font-size: 12px; color: #777; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="icon">🔗</div>
+  <div class="title">Connecting to Strava...</div>
+  <div class="sub">Redirecting back to your journal</div>
+</div>
+<script>
+  // Grab the code from Strava's redirect and pass it back to the main app
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const error = params.get("error");
+
+  if (error) {
+    document.querySelector(".title").textContent = "Connection cancelled";
+    document.querySelector(".icon").textContent = "✕";
+    setTimeout(() => { window.location.href = "/life-tracker/"; }, 2000);
+  } else if (code) {
+    // Redirect back to main app with the code as a query param
+    window.location.href = "/life-tracker/?strava_code=" + code;
+  } else {
+    window.location.href = "/life-tracker/";
+  }
+</script>
+</body>
+</html>

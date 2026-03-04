@@ -230,6 +230,7 @@
   <button class="tab mono" onclick="showTab('analyze')">Patterns</button>
   <button class="tab mono" onclick="showTab('history')">History</button>
   <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
+  <button class="tab mono" onclick="showTab('strava')">Strava</button>
 </div>
 
 <!-- LOG TAB -->
@@ -928,7 +929,7 @@ function renderSuppQuickLog() {
 
 // ── Tab switching ─────────────────────────────────────────────────
 function showTab(name) {
-  ["log","analyze","history","foundation"].forEach((t,i) => {
+  ["log","analyze","history","foundation","strava"].forEach((t,i) => {
     const el = document.getElementById("tab-"+t);
     if (el) el.style.display = t===name?"block":"none";
     const btn = document.querySelectorAll(".tab")[i];
@@ -1332,5 +1333,40 @@ buildCatGrid();
 buildScoreRows();
 renderSuppQuickLog();
 </script>
+
+<!-- STRAVA TAB -->
+<div class="content" id="tab-strava" style="display:none">
+
+  <!-- Not connected state -->
+  <div id="strava-connect" style="text-align:center;padding:32px 0;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FC4C02" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">
+      <path d="M13.4 19.2l-3.2-6.4H6l7.4-12.8 3.2 6.4H21z"/>
+    </svg>
+    <div style="font-family:'DM Mono',monospace;font-size:13px;color:#444;margin-bottom:20px;">Connect your Strava account to import activities</div>
+    <button onclick="stravaConnect()" style="padding:14px 28px;background:#FC4C02;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Connect Strava</button>
+  </div>
+
+  <!-- Connected state -->
+  <div id="strava-connected" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img id="strava-avatar" src="" style="width:36px;height:36px;border-radius:50%;display:none;" />
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#FC4C02;text-transform:uppercase;">Connected</div>
+          <div style="font-size:14px;color:#111;font-weight:600;" id="strava-name">Athlete</div>
+        </div>
+      </div>
+      <button onclick="stravaDisconnect()" style="padding:6px 12px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;color:#777;cursor:pointer;">Disconnect</button>
+    </div>
+
+    <button onclick="stravaLoadActivities()" id="strava-refresh-btn" style="width:100%;padding:12px;background:#FC4C02;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;margin-bottom:16px;">Load Recent Activities</button>
+
+    <div id="strava-loading" style="display:none;text-align:center;padding:24px;font-family:'DM Mono',monospace;font-size:11px;color:#777;letter-spacing:2px;">Loading activities...</div>
+    <div id="strava-error" style="display:none" class="error-banner"></div>
+    <div id="strava-activities"></div>
+  </div>
+
+</div>
+
 </body>
 </html>

@@ -54,11 +54,11 @@
   .tabs::-webkit-scrollbar { display: none; }
   .tab {
     padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px;
-    cursor: pointer; background: transparent; color: var(--muted);
+    cursor: pointer; background: #D6F0EF; color: #2A7A7A;
     font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px;
     transition: all 0.2s; -webkit-tap-highlight-color: transparent; white-space: nowrap; flex-shrink: 0;
   }
-  .tab.active { background: #3A9A3A; color: #fff; border-color: #3A9A3A; }
+  .tab.active { background: #3A9A9A; color: #fff; border-color: #3A9A9A; }
 
   /* Foundation sub-tabs */
   .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
@@ -998,11 +998,11 @@ function selectCat(key) {
   document.getElementById("stravaSection").style.display = key === "exercise" ? "block" : "none";
   // Per-category label + border
   const catMeta = {
-    sleep:     { label: "Sleep & Recovery", bg: "#7C9CBF", border: "#000000" },
-    food:      { label: "Food & Nutrition",  bg: "#8BAF7C", border: "#000000" },
-    stress:    { label: "Stress & Mental",   bg: "#BF9C7C", border: "#000000" },
-    substance: { label: "Add-Ons",           bg: "#BF7C9C", border: "#000000" },
-    exercise:  { label: "Manual Entry",      bg: "#FC4C02", border: "#000000" },
+    sleep:     { label: "Sleep & Recovery", bg: "#7C9CBF", border: "#3A9A9A" },
+    food:      { label: "Food & Nutrition",  bg: "#8BAF7C", border: "#3A9A9A" },
+    stress:    { label: "Stress & Mental",   bg: "#BF9C7C", border: "#3A9A9A" },
+    substance: { label: "Add-Ons",           bg: "#BF7C9C", border: "#3A9A9A" },
+    exercise:  { label: "Manual Entry",      bg: "#FC4C02", border: "#3A9A9A" },
   };
   const meta = catMeta[key];
   const labelEl = document.getElementById("manualEntryLabel");
@@ -1012,7 +1012,7 @@ function selectCat(key) {
     labelEl.style.display = "block";
     labelText.textContent = meta.label;
     labelText.style.background = meta.bg;
-    border.style.border = "2px solid " + meta.border;
+    border.style.border = "2px solid #3A9A9A";
     border.style.borderRadius = "8px";
     border.style.padding = "16px 14px 14px";
   }

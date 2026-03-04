@@ -221,13 +221,13 @@
     <img src="icon-192.png" style="width:72px;height:72px;border-radius:16px;flex-shrink:0;" />
     <div class="header-label mono" style="margin-bottom:0;">Behavioral Performance</div>
   </div>
-  <h1 class="serif">Your Performance Journal</h1>
-  <div class="header-count mono" id="entryCount">0 entries logged</div>
+  <h1 class="serif">Your Behavioral Journal</h1>
+
 </div>
 
 <div class="tabs">
   <button class="tab active mono" onclick="showTab('log')">Log Entry</button>
-  <button class="tab mono" onclick="showTab('analyze')">Analyze</button>
+  <button class="tab mono" onclick="showTab('analyze')">Patterns</button>
   <button class="tab mono" onclick="showTab('history')">History</button>
   <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
 </div>
@@ -284,6 +284,7 @@
 
 <!-- HISTORY TAB -->
 <div class="content" id="tab-history" style="display:none">
+  <div class="header-count mono" id="entryCount" style="margin-bottom:16px;">0 entries logged</div>
   <div id="historyList"></div>
 </div>
 

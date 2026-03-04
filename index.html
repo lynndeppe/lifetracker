@@ -231,7 +231,6 @@
   <button class="tab mono" onclick="showTab('analyze')">Patterns</button>
   <button class="tab mono" onclick="showTab('history')">History</button>
   <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
-  <button class="tab mono" onclick="showTab('strava')">Strava</button>
 </div>
 
 <!-- LOG TAB -->
@@ -274,6 +273,39 @@
   <div class="scores-card" id="scoresCard" style="display:none">
     <div class="scores-title mono">Rate This Experience</div>
     <div id="scoreRows"></div>
+  </div>
+
+  <!-- Strava import — shown when Focal Events category is selected -->
+  <div id="stravaSection" style="display:none;margin-bottom:14px;">
+    <div style="border-top:1px solid rgba(0,0,0,0.1);padding-top:14px;margin-top:4px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:12px;font-weight:600;">Import from Strava</div>
+
+      <!-- Not connected -->
+      <div id="strava-connect" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FC4C02" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <path d="M13.4 19.2l-3.2-6.4H6l7.4-12.8 3.2 6.4H21z"/>
+        </svg>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#555;flex:1;">Connect Strava to import activities</span>
+        <button onclick="stravaConnect()" style="padding:8px 14px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Connect</button>
+      </div>
+
+      <!-- Connected -->
+      <div id="strava-connected" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <img id="strava-avatar" src="" style="width:28px;height:28px;border-radius:50%;display:none;" />
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:#FC4C02;" id="strava-name">Strava Connected</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="stravaLoadActivities()" style="padding:6px 12px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;">Load</button>
+            <button onclick="stravaDisconnect()" style="padding:6px 10px;background:none;border:1px solid rgba(0,0,0,0.12);border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;color:#999;cursor:pointer;">✕</button>
+          </div>
+        </div>
+        <div id="strava-loading" style="display:none;font-family:'DM Mono',monospace;font-size:11px;color:#777;padding:8px 0;text-align:center;letter-spacing:2px;">Loading...</div>
+        <div id="strava-error" style="display:none" class="error-banner"></div>
+        <div id="strava-activities"></div>
+      </div>
+    </div>
   </div>
 
   <button class="save-btn mono" id="saveBtn" onclick="saveEntry()">Save Entry</button>
@@ -930,7 +962,7 @@ function renderSuppQuickLog() {
 
 // ── Tab switching ─────────────────────────────────────────────────
 function showTab(name) {
-  ["log","analyze","history","foundation","strava"].forEach((t,i) => {
+  ["log","analyze","history","foundation"].forEach((t,i) => {
     const el = document.getElementById("tab-"+t);
     if (el) el.style.display = t===name?"block":"none";
     const btn = document.querySelectorAll(".tab")[i];
@@ -939,7 +971,7 @@ function showTab(name) {
   if (name==="history") renderHistory();
   if (name==="foundation") { renderSuppQuickLog(); setTimeout(() => { if(window.initRangeBar) window.initRangeBar(); }, 50); }
   if (name==="analyze") renderFocalEventList();
-  if (name==="strava") stravaCheckToken();
+
 }
 
 // ── Category picker ───────────────────────────────────────────────
@@ -959,7 +991,8 @@ function selectCat(key) {
   buildCatGrid();
   updateMicStyle();
   document.getElementById("scoresCard").style.display = key === "exercise" ? "block" : "none";
-  if (key === "exercise") buildScoreRows();
+  document.getElementById("stravaSection").style.display = key === "exercise" ? "block" : "none";
+  if (key === "exercise") { stravaCheckToken(); buildScoreRows(); }
 }
 
 // ── Score rows ────────────────────────────────────────────────────
@@ -1329,46 +1362,158 @@ Be direct and personal. Reference specific entries. If data is limited, say so b
   updateUI();
 }
 
+// ── Strava ────────────────────────────────────────────────────────
+const WORKER = "https://green-dawn-cf6c.lynndeppe.workers.dev/";
+const STRAVA_CLIENT_ID = "208085";
+const STRAVA_REDIRECT = "https://lynndeppe.github.io/life-tracker/strava-callback.html";
+
+function stravaConnect() {
+  const authUrl = "https://www.strava.com/oauth/authorize" +
+    "?client_id=" + STRAVA_CLIENT_ID +
+    "&redirect_uri=" + encodeURIComponent(STRAVA_REDIRECT) +
+    "&response_type=code" +
+    "&approval_prompt=auto" +
+    "&scope=activity:read_all";
+  window.location.href = authUrl;
+}
+
+function stravaDisconnect() {
+  localStorage.removeItem("strava_token");
+  document.getElementById("strava-connect").style.display = "flex";
+  document.getElementById("strava-connected").style.display = "none";
+  document.getElementById("strava-activities").innerHTML = "";
+}
+
+function stravaCheckToken() {
+  try {
+    const t = JSON.parse(localStorage.getItem("strava_token") || "null");
+    if (t && t.access_token) {
+      document.getElementById("strava-connect").style.display = "none";
+      document.getElementById("strava-connected").style.display = "block";
+      if (t.athlete_name) document.getElementById("strava-name").textContent = t.athlete_name;
+      if (t.athlete_profile) {
+        const av = document.getElementById("strava-avatar");
+        av.src = t.athlete_profile; av.style.display = "block";
+      }
+      return true;
+    }
+  } catch {}
+  document.getElementById("strava-connect").style.display = "flex";
+  document.getElementById("strava-connected").style.display = "none";
+  return false;
+}
+
+async function stravaLoadActivities() {
+  const t = JSON.parse(localStorage.getItem("strava_token") || "null");
+  if (!t) return;
+  document.getElementById("strava-loading").style.display = "block";
+  document.getElementById("strava-error").style.display = "none";
+  document.getElementById("strava-activities").innerHTML = "";
+  try {
+    const resp = await fetch(WORKER + "?service=strava-activities", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_token: t.access_token, refresh_token: t.refresh_token, expires_at: t.expires_at }),
+    });
+    const data = await resp.json();
+    if (data.access_token) {
+      localStorage.setItem("strava_token", JSON.stringify({ ...t, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at }));
+    }
+    renderStravaActivities(data.activities || []);
+  } catch(e) {
+    document.getElementById("strava-error").textContent = "Failed to load: " + e.message;
+    document.getElementById("strava-error").style.display = "block";
+  }
+  document.getElementById("strava-loading").style.display = "none";
+}
+
+function renderStravaActivities(activities) {
+  const el = document.getElementById("strava-activities");
+  if (!activities.length) { el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:12px;color:#777;padding:8px 0;">No recent activities found.</div>'; return; }
+  localStorage.setItem("strava_last_activities", JSON.stringify(activities));
+  const typeIcon = { Run:"🏃", Ride:"🚴", Swim:"🏊", Walk:"🚶", Hike:"🥾", WeightTraining:"🏋️", Workout:"⚡" };
+  el.innerHTML = activities.map(a => {
+    const date = new Date(a.start_date_local).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
+    const dist = a.distance ? (a.distance/1000).toFixed(2)+"km" : "";
+    const duration = a.moving_time ? Math.floor(a.moving_time/60)+"min" : "";
+    const hr = a.average_heartrate ? "♥"+Math.round(a.average_heartrate)+"bpm" : "";
+    const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed) : "";
+    const icon = typeIcon[a.type] || "⚡";
+    const stats = [dist, duration, pace, hr].filter(Boolean).join(" · ");
+    return `<div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;color:#111;font-weight:600;margin-bottom:2px;">${icon} ${a.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:3px;">${date}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">${stats}</div>
+      </div>
+      <button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;flex-shrink:0;">+ Import</button>
+    </div>`;
+  }).join("");
+}
+
+function paceFmt(speed) {
+  if (!speed) return "";
+  const secPerKm = 1000 / speed;
+  const min = Math.floor(secPerKm / 60);
+  const sec = Math.round(secPerKm % 60).toString().padStart(2, "0");
+  return min + ":" + sec + "/km";
+}
+
+function stravaImportAsFocalEvent(activityId) {
+  const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+  const a = cached.find(x => x.id === activityId);
+  if (!a) { alert("Reload activities and try again."); return; }
+  const dist = a.distance ? (a.distance/1000).toFixed(2)+"km" : "";
+  const duration = a.moving_time ? Math.floor(a.moving_time/60)+"min" : "";
+  const hr = a.average_heartrate ? Math.round(a.average_heartrate)+"bpm avg HR" : "";
+  const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed)+" pace" : "";
+  const note = [a.name, a.type, dist, duration, pace, hr].filter(Boolean).join(" · ");
+  entries.unshift({ id: Date.now(), ts: new Date(a.start_date_local).getTime(), category: "exercise", note, scores: {} });
+  saveEntries();
+  // Switch to log entry tab and select focal events
+  currentCategory = "exercise";
+  buildCatGrid();
+  document.getElementById("scoresCard").style.display = "block";
+  document.getElementById("stravaSection").style.display = "block";
+  buildScoreRows();
+  document.getElementById("transcriptText").value = note;
+  transcript = note;
+  updateSaveBtn();
+}
+
+// Handle OAuth callback code in URL
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("strava_code");
+  if (!code) return;
+  window.history.replaceState({}, "", window.location.pathname);
+  fetch(WORKER + "?service=strava-auth&code=" + code)
+    .then(r => r.json())
+    .then(data => {
+      if (data.access_token) {
+        localStorage.setItem("strava_token", JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_at: data.expires_at,
+          athlete_name: data.athlete ? data.athlete.firstname + " " + data.athlete.lastname : "Athlete",
+          athlete_profile: data.athlete?.profile,
+        }));
+        currentCategory = "exercise";
+        buildCatGrid();
+        document.getElementById("scoresCard").style.display = "block";
+        document.getElementById("stravaSection").style.display = "block";
+        stravaCheckToken();
+      }
+    })
+    .catch(e => console.error("Strava auth error:", e));
+})();
+
 // ── Init ──────────────────────────────────────────────────────────
 loadEntries();
 buildCatGrid();
 buildScoreRows();
 renderSuppQuickLog();
 </script>
-
-<!-- STRAVA TAB -->
-<div class="content" id="tab-strava" style="display:none">
-
-  <!-- Not connected state -->
-  <div id="strava-connect" style="text-align:center;padding:32px 0;">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FC4C02" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">
-      <path d="M13.4 19.2l-3.2-6.4H6l7.4-12.8 3.2 6.4H21z"/>
-    </svg>
-    <div style="font-family:'DM Mono',monospace;font-size:13px;color:#444;margin-bottom:20px;">Connect your Strava account to import activities</div>
-    <button onclick="stravaConnect()" style="padding:14px 28px;background:#FC4C02;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Connect Strava</button>
-  </div>
-
-  <!-- Connected state -->
-  <div id="strava-connected" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <img id="strava-avatar" src="" style="width:36px;height:36px;border-radius:50%;display:none;" />
-        <div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#FC4C02;text-transform:uppercase;">Connected</div>
-          <div style="font-size:14px;color:#111;font-weight:600;" id="strava-name">Athlete</div>
-        </div>
-      </div>
-      <button onclick="stravaDisconnect()" style="padding:6px 12px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;color:#777;cursor:pointer;">Disconnect</button>
-    </div>
-
-    <button onclick="stravaLoadActivities()" id="strava-refresh-btn" style="width:100%;padding:12px;background:#FC4C02;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;margin-bottom:16px;">Load Recent Activities</button>
-
-    <div id="strava-loading" style="display:none;text-align:center;padding:24px;font-family:'DM Mono',monospace;font-size:11px;color:#777;letter-spacing:2px;">Loading activities...</div>
-    <div id="strava-error" style="display:none" class="error-banner"></div>
-    <div id="strava-activities"></div>
-  </div>
-
-</div>
 
 </body>
 </html>

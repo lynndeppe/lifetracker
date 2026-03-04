@@ -463,6 +463,31 @@
       <button onclick="saveRanges()" style="width:100%;padding:11px;background:#7A5500;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Save Ranges</button>
       <div id="rangesSaved" style="display:none;text-align:center;margin-top:8px;font-family:'DM Mono',monospace;font-size:11px;color:#5A8F4A;">&#10003; Saved</div>
     </div>
+
+    <!-- Data Management -->
+    <div style="margin-top:28px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Data Management</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Back up and restore your journal entries and settings.</div>
+
+      <!-- Backup -->
+      <div style="margin-bottom:12px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#555;text-transform:uppercase;font-weight:600;margin-bottom:6px;">Backup</div>
+        <button onclick="backupData()" style="width:100%;padding:11px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">&#8595; Download Backup</button>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:#999;margin-top:6px;text-align:center;" id="lastBackupLabel"></div>
+      </div>
+
+      <!-- Restore -->
+      <div style="margin-bottom:12px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#555;text-transform:uppercase;font-weight:600;margin-bottom:6px;">Restore from Backup</div>
+        <label style="display:block;width:100%;padding:11px;background:rgba(0,0,0,0.04);border:1px dashed rgba(0,0,0,0.2);border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;text-align:center;color:#555;box-sizing:border-box;">
+          &#8593; Choose Backup File
+          <input type="file" accept=".json" onchange="restoreData(event)" style="display:none;">
+        </label>
+        <div id="restoreStatus" style="display:none;text-align:center;margin-top:8px;font-family:'DM Mono',monospace;font-size:11px;"></div>
+      </div>
+
+    </div>
+
   </div><!-- end foundation-setup -->
 
 <!-- ANALYZE TAB -->
@@ -567,7 +592,12 @@ function showSubTab(name) {
   document.getElementById("foundation-setup").style.display = name === "setup" ? "block" : "none";
   document.getElementById("subtab-supplements").classList.toggle("active", name === "supplements");
   document.getElementById("subtab-setup").classList.toggle("active", name === "setup");
-  if (name === "setup") setTimeout(() => { if(window.initRangeBar) window.initRangeBar(); }, 50);
+  if (name === "setup") setTimeout(() => {
+    if(window.initRangeBar) window.initRangeBar();
+    const last = localStorage.getItem("bl_last_backup");
+    const label = document.getElementById("lastBackupLabel");
+    if (label) label.textContent = last ? "Last backup: " + last : "No backup yet";
+  }, 50);
 }
 
 // Experience range drag bar
@@ -1390,6 +1420,65 @@ Be direct and personal. Reference specific entries. If data is limited, say so b
 
   document.getElementById("analyzingMsg").style.display = "none";
   updateUI();
+}
+
+// ── Data Backup & Restore ─────────────────────────────────────────
+function backupData() {
+  const data = {
+    version: 1,
+    exported: new Date().toISOString(),
+    entries: JSON.parse(localStorage.getItem("bl_entries") || "[]"),
+    ranges: JSON.parse(localStorage.getItem("bl_ranges") || "{}"),
+    supplements: JSON.parse(localStorage.getItem("bl_supplements") || "[]"),
+    strava_token: JSON.parse(localStorage.getItem("strava_token") || "null"),
+    strava_activities: JSON.parse(localStorage.getItem("strava_last_activities") || "[]"),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `bio-performance-backup-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  const now = new Date().toLocaleString();
+  localStorage.setItem("bl_last_backup", now);
+  const label = document.getElementById("lastBackupLabel");
+  if (label) label.textContent = "Last backup: " + now;
+}
+
+function restoreData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.version || !Array.isArray(data.entries)) throw new Error("Invalid backup file");
+      if (!confirm(`Restore ${data.entries.length} entries from ${data.exported?.slice(0,10)}? This will replace your current data.`)) return;
+      localStorage.setItem("bl_entries", JSON.stringify(data.entries));
+      if (data.ranges) localStorage.setItem("bl_ranges", JSON.stringify(data.ranges));
+      if (data.supplements) localStorage.setItem("bl_supplements", JSON.stringify(data.supplements));
+      if (data.strava_token) localStorage.setItem("strava_token", JSON.stringify(data.strava_token));
+      if (data.strava_activities) localStorage.setItem("strava_last_activities", JSON.stringify(data.strava_activities));
+      entries = data.entries;
+      loadRanges();
+      renderSuppQuickLog();
+      renderHistory();
+      updateUI();
+      const status = document.getElementById("restoreStatus");
+      status.textContent = "✓ Restored " + data.entries.length + " entries successfully";
+      status.style.color = "#5A8F4A";
+      status.style.display = "block";
+      setTimeout(() => { status.style.display = "none"; }, 4000);
+    } catch(err) {
+      const status = document.getElementById("restoreStatus");
+      status.textContent = "✗ Invalid backup file: " + err.message;
+      status.style.color = "#BF7C7C";
+      status.style.display = "block";
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ── Strava ────────────────────────────────────────────────────────

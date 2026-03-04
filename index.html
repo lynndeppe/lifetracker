@@ -239,43 +239,44 @@
 
   <!-- Supplement panel (shown when supplement category selected) -->
 
-  <div class="mic-wrap">
-    <button class="mic-btn" id="micBtn" ontouchstart="pressStart(event)" ontouchend="pressEnd(event)" onmousedown="pressStart(event)" onmouseup="pressEnd(event)" onmouseleave="pressEnd(event)">
-      <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3A9A3A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-        <line x1="12" y1="19" x2="12" y2="23"/>
-        <line x1="8" y1="23" x2="16" y2="23"/>
-      </svg>
-      <div class="waveform" id="waveform" style="display:none">
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-        <div class="wave-bar"></div>
-      </div>
-    </button>
-    <div class="mic-label mono" id="micLabel">Hold to Speak</div>
-  </div>
-
   <div id="voiceError" style="display:none" class="error-banner"></div>
 
-  <div id="manualEntryLabel" style="display:none;text-align:right;margin-bottom:4px;">
-    <span style="background:#FC4C02;color:white;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:3px;font-weight:700;">Manual Entry</span>
-  </div>
-  <div class="transcript" id="transcriptBox">
-    <textarea id="transcriptText" rows="4" placeholder="Your spoken entry will appear here... or type directly" oninput="updateSaveBtn()"></textarea>
-    <button class="clear-btn" id="clearBtn" style="display:none" onclick="clearTranscript()">×</button>
-  </div>
+  <!-- Manual Entry outer box — label sits on top border, only shown for Focal Events -->
+  <div id="manualEntryBox" style="position:relative;margin-bottom:14px;">
+    <!-- Orange label on top border, right aligned, only visible for Focal Events -->
+    <div id="manualEntryLabel" style="display:none;position:absolute;top:-11px;right:12px;z-index:1;">
+      <span style="background:#FC4C02;color:white;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:3px;font-weight:700;">Manual Entry</span>
+    </div>
+    <!-- Box border — only visible for Focal Events -->
+    <div id="manualEntryBorder" style="border:none;border-radius:8px;padding:0;transition:all 0.2s;">
+      <div class="mic-wrap">
+        <button class="mic-btn" id="micBtn" ontouchstart="pressStart(event)" ontouchend="pressEnd(event)" onmousedown="pressStart(event)" onmouseup="pressEnd(event)" onmouseleave="pressEnd(event)">
+          <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3A9A3A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+          <div class="waveform" id="waveform" style="display:none">
+            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+          </div>
+        </button>
+        <div class="mic-label mono" id="micLabel">Hold to Speak</div>
+      </div>
 
-  <!-- Exercise scores (hidden unless exercise selected) -->
-  <div class="scores-card" id="scoresCard" style="display:none">
-    <div class="scores-title mono">Rate This Experience</div>
-    <div id="scoreRows"></div>
+      <div class="transcript" id="transcriptBox">
+        <textarea id="transcriptText" rows="4" placeholder="Your spoken entry will appear here... or type directly" oninput="updateSaveBtn()"></textarea>
+        <button class="clear-btn" id="clearBtn" style="display:none" onclick="clearTranscript()">×</button>
+      </div>
+
+      <!-- Exercise scores (hidden unless exercise selected) -->
+      <div class="scores-card" id="scoresCard" style="display:none">
+        <div class="scores-title mono">Rate This Experience</div>
+        <div id="scoreRows"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Strava import — shown when Focal Events category is selected -->
@@ -996,6 +997,10 @@ function selectCat(key) {
   document.getElementById("scoresCard").style.display = key === "exercise" ? "block" : "none";
   document.getElementById("stravaSection").style.display = key === "exercise" ? "block" : "none";
   document.getElementById("manualEntryLabel").style.display = key === "exercise" ? "block" : "none";
+  const border = document.getElementById("manualEntryBorder");
+  border.style.border = key === "exercise" ? "2px solid #FC4C02" : "none";
+  border.style.borderRadius = key === "exercise" ? "8px" : "0";
+  border.style.padding = key === "exercise" ? "16px 14px 14px" : "0";
   if (key === "exercise") { stravaCheckToken(); buildScoreRows(); }
 }
 

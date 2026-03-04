@@ -302,7 +302,7 @@
           </div>
           <div style="display:flex;gap:6px;">
             <button onclick="stravaLoadActivities()" style="padding:6px 12px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;">Load</button>
-            <button onclick="stravaDisconnect()" style="padding:6px 10px;background:none;border:1px solid rgba(0,0,0,0.12);border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;color:#999;cursor:pointer;">✕</button>
+            <button onclick="stravaDisconnect()" style="padding:6px 10px;background:none;border:1px solid rgba(0,0,0,0.12);border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;color:#999;cursor:pointer;">Disconnect</button>
           </div>
         </div>
         <div id="strava-loading" style="display:none;font-family:'DM Mono',monospace;font-size:11px;color:#777;padding:8px 0;text-align:center;letter-spacing:2px;">Loading...</div>
@@ -1490,10 +1490,20 @@ function renderStravaActivities(activities, newCount) {
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:3px;">${date}</div>
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">${stats}</div>
       </div>
-      <button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;flex-shrink:0;">+ Import</button>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+        <button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">+ Import</button>
+        <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
+      </div>
     </div>`;
   }).join("");
   el.innerHTML = header + cards;
+}
+
+function stravaDeleteActivity(activityId) {
+  const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+  const updated = cached.filter(a => a.id !== activityId);
+  localStorage.setItem("strava_last_activities", JSON.stringify(updated));
+  renderStravaActivities(updated, 0);
 }
 
 function paceFmt(speed) {
@@ -1553,6 +1563,7 @@ window.addEventListener("DOMContentLoaded", function() {
         document.getElementById("scoresCard").style.display = "block";
         document.getElementById("stravaSection").style.display = "block";
         stravaCheckToken();
+        stravaLoadActivities();
       } else {
         console.error("No access_token in response:", JSON.stringify(data));
       }

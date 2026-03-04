@@ -1438,10 +1438,16 @@ async function stravaLoadActivities() {
   document.getElementById("strava-error").style.display = "none";
   document.getElementById("strava-activities").innerHTML = "";
   try {
+    // Find timestamp of most recent cached activity to only fetch newer ones
+    const prev = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+    const after = prev.length > 0
+      ? Math.floor(new Date(prev[0].start_date_local).getTime() / 1000)
+      : 0;
+
     const resp = await fetch(WORKER + "?service=strava-activities", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ access_token: t.access_token, refresh_token: t.refresh_token, expires_at: t.expires_at }),
+      body: JSON.stringify({ access_token: t.access_token, refresh_token: t.refresh_token, expires_at: t.expires_at, after }),
     });
     const data = await resp.json();
     if (data.access_token) {
@@ -1449,7 +1455,6 @@ async function stravaLoadActivities() {
     }
 
     // Merge new activities with previously cached ones, deduplicate by id
-    const prev = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
     const prevIds = new Set(prev.map(a => a.id));
     const incoming = data.activities || [];
     const newOnes = incoming.filter(a => !prevIds.has(a.id));

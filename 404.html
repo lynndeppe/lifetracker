@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script>
+  // Catch GitHub Pages 404s and redirect to index with the query string preserved
+  var search = window.location.search;
+  var path = window.location.pathname;
+  // Redirect back to the app root with query params intact
+  window.location.replace(
+    'https://lynndeppe.github.io/lifetracker/' +
+    (search ? search : '')
+  );
+</script>
+</head>
+<body></body>
+</html>

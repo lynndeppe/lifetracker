@@ -95,7 +95,7 @@
   .mic-btn svg { pointer-events: none; }
   .mic-label {
     font-size: 11px; letter-spacing: 2px;
-    font-family: 'DM Mono', monospace; color: #3A9A3A; font-weight: 700;
+    font-family: 'DM Mono', monospace; color: #111111; font-weight: 700;
     transition: color 0.2s; text-transform: uppercase; font-style: italic;
   }
 
@@ -251,7 +251,7 @@
     <div id="manualEntryBorder" style="border:none;border-radius:8px;padding:0;transition:all 0.2s;">
       <div class="mic-wrap">
         <button class="mic-btn" id="micBtn" ontouchstart="pressStart(event)" ontouchend="pressEnd(event)" onmousedown="pressStart(event)" onmouseup="pressEnd(event)" onmouseleave="pressEnd(event)">
-          <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3A9A3A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
             <line x1="12" y1="19" x2="12" y2="23"/>
@@ -984,7 +984,7 @@ function buildCatGrid() {
   grid.innerHTML = Object.entries(CATEGORIES).map(([key, c]) => `
     <button class="cat-btn mono ${key === currentCategory ? 'active' : ''}" id="cat-${key}"
       onclick="selectCat('${key}')"
-      style="${key === currentCategory ? 'border-color:#2D7A2D;border-width:4px;color:#2D7A2D;' : ''}">
+      style="${key === currentCategory ? 'border-color:#3A9A9A;border-width:4px;color:#3A9A9A;' : ''}">
       <span class="cat-icon">${c.icon}</span>${c.label}
     </button>
   `).join("");

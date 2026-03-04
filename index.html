@@ -45,8 +45,8 @@
 
   /* Header */
   .header { padding: 28px 20px 0; max-width: 640px; margin: 0 auto; }
-  .header-label { font-size: 10px; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
-  .header h1 { font-size: 24px; font-weight: 400; color: var(--gold); letter-spacing: 0.5px; }
+  .header-label { font-size: 24px; letter-spacing: 4px; color: var(--gold); text-transform: uppercase; margin-bottom: 5px; font-family: 'Playfair Display', serif; font-weight: 400; font-style: italic; }
+  .header h1 { font-size: 16px; font-weight: 400; color: var(--gold); letter-spacing: 0.5px; }
   .header-count { margin-top: 3px; font-size: 12px; color: var(--muted); }
 
   /* Tabs */
@@ -220,7 +220,7 @@
 <div class="header">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
     <img src="icon-192.png" style="width:72px;height:72px;border-radius:16px;flex-shrink:0;" />
-    <div class="header-label mono" style="margin-bottom:0;">Behavioral Performance</div>
+    <div class="header-label" style="margin-bottom:0;">My BIO Performance</div>
   </div>
   <h1 class="serif">Your Behavioral Journal</h1>
 
@@ -1420,6 +1420,9 @@ function stravaCheckToken() {
         const av = document.getElementById("strava-avatar");
         av.src = t.athlete_profile; av.style.display = "block";
       }
+      // Show previously cached activities right away
+      const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+      if (cached.length) renderStravaActivities(cached, 0);
       return true;
     }
   } catch {}
@@ -1444,7 +1447,19 @@ async function stravaLoadActivities() {
     if (data.access_token) {
       localStorage.setItem("strava_token", JSON.stringify({ ...t, access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at }));
     }
-    renderStravaActivities(data.activities || []);
+
+    // Merge new activities with previously cached ones, deduplicate by id
+    const prev = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+    const prevIds = new Set(prev.map(a => a.id));
+    const incoming = data.activities || [];
+    const newOnes = incoming.filter(a => !prevIds.has(a.id));
+    const merged = [...incoming, ...prev.filter(a => !incoming.find(b => b.id === a.id))];
+    // Sort by date descending
+    merged.sort((a, b) => new Date(b.start_date_local) - new Date(a.start_date_local));
+    localStorage.setItem("strava_last_activities", JSON.stringify(merged));
+
+    const newCount = newOnes.length;
+    renderStravaActivities(merged, newCount);
   } catch(e) {
     document.getElementById("strava-error").textContent = "Failed to load: " + e.message;
     document.getElementById("strava-error").style.display = "block";
@@ -1452,12 +1467,16 @@ async function stravaLoadActivities() {
   document.getElementById("strava-loading").style.display = "none";
 }
 
-function renderStravaActivities(activities) {
+function renderStravaActivities(activities, newCount) {
   const el = document.getElementById("strava-activities");
-  if (!activities.length) { el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:12px;color:#777;padding:8px 0;">No recent activities found.</div>'; return; }
-  localStorage.setItem("strava_last_activities", JSON.stringify(activities));
+  if (!activities.length) { el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:12px;color:#777;padding:8px 0;">No activities found.</div>'; return; }
+
+  const header = newCount > 0
+    ? `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#3A9A3A;letter-spacing:1px;margin-bottom:10px;">&#10003; ${newCount} new activit${newCount === 1 ? "y" : "ies"} added</div>`
+    : `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;letter-spacing:1px;margin-bottom:10px;">No new activities since last load</div>`;
+
   const typeIcon = { Run:"🏃", Ride:"🚴", Swim:"🏊", Walk:"🚶", Hike:"🥾", WeightTraining:"🏋️", Workout:"⚡" };
-  el.innerHTML = activities.map(a => {
+  const cards = activities.map(a => {
     const date = new Date(a.start_date_local).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
     const dist = a.distance ? (a.distance/1000).toFixed(2)+"km" : "";
     const duration = a.moving_time ? Math.floor(a.moving_time/60)+"min" : "";
@@ -1474,6 +1493,7 @@ function renderStravaActivities(activities) {
       <button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;flex-shrink:0;">+ Import</button>
     </div>`;
   }).join("");
+  el.innerHTML = header + cards;
 }
 
 function paceFmt(speed) {

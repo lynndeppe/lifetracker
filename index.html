@@ -280,12 +280,16 @@
   </div>
 
   <!-- Strava import — shown when Focal Events category is selected -->
-  <div id="stravaSection" style="display:none;margin-bottom:14px;">
-    <div style="border-top:1px solid rgba(0,0,0,0.1);padding-top:14px;margin-top:4px;">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:12px;font-weight:600;">Import from Strava</div>
+  <div id="stravaSection" style="display:none;margin-bottom:14px;position:relative;">
+    <!-- Orange label on top border, right aligned — mirrors Manual Entry -->
+    <div style="position:absolute;top:-11px;right:12px;z-index:1;">
+      <span style="background:#FC4C02;color:white;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:3px;font-weight:700;">Import from Strava</span>
+    </div>
+    <!-- Teal border box around strava content -->
+    <div style="border:2px solid #3A9A9A;border-radius:8px;padding:16px 14px 14px;">
 
       <!-- Not connected -->
-      <div id="strava-connect" style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;">
+      <div id="strava-connect" style="display:flex;align-items:center;gap:12px;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FC4C02" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
           <path d="M13.4 19.2l-3.2-6.4H6l7.4-12.8 3.2 6.4H21z"/>
         </svg>
@@ -309,6 +313,7 @@
         <div id="strava-error" style="display:none" class="error-banner"></div>
         <div id="strava-activities"></div>
       </div>
+
     </div>
   </div>
 

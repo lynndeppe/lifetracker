@@ -1484,8 +1484,10 @@ function stravaImportAsFocalEvent(activityId) {
 // Handle OAuth callback code in URL
 (function() {
   const params = new URLSearchParams(window.location.search);
-  const code = params.get("strava_code");
-  if (!code) return;
+  const code = params.get("code");
+  const scope = params.get("scope");
+  // Only handle if this looks like a Strava callback (has code + scope)
+  if (!code || !scope) return;
   window.history.replaceState({}, "", window.location.pathname);
   fetch(WORKER + "?service=strava-auth&code=" + code)
     .then(r => r.json())

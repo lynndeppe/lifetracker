@@ -243,11 +243,11 @@
 
   <!-- Manual Entry outer box — label sits on top border, only shown for Focal Events -->
   <div id="manualEntryBox" style="position:relative;margin-bottom:14px;">
-    <!-- Orange label on top border, right aligned, only visible for Focal Events -->
+    <!-- Dynamic category label on top border -->
     <div id="manualEntryLabel" style="display:none;position:absolute;top:-11px;right:12px;z-index:1;">
-      <span style="background:#FC4C02;color:white;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:3px;font-weight:700;">Manual Entry</span>
+      <span id="manualEntryLabelText" style="background:#FC4C02;color:white;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:3px;font-weight:700;">Manual Entry</span>
     </div>
-    <!-- Box border — only visible for Focal Events -->
+    <!-- Dynamic category border -->
     <div id="manualEntryBorder" style="border:none;border-radius:8px;padding:0;transition:all 0.2s;">
       <div class="mic-wrap">
         <button class="mic-btn" id="micBtn" ontouchstart="pressStart(event)" ontouchend="pressEnd(event)" onmousedown="pressStart(event)" onmouseup="pressEnd(event)" onmouseleave="pressEnd(event)">
@@ -996,11 +996,26 @@ function selectCat(key) {
   updateMicStyle();
   document.getElementById("scoresCard").style.display = key === "exercise" ? "block" : "none";
   document.getElementById("stravaSection").style.display = key === "exercise" ? "block" : "none";
-  document.getElementById("manualEntryLabel").style.display = key === "exercise" ? "block" : "none";
+  // Per-category label + border
+  const catMeta = {
+    sleep:     { label: "Sleep & Recovery", bg: "#7C9CBF", border: "#000000" },
+    food:      { label: "Food & Nutrition",  bg: "#8BAF7C", border: "#000000" },
+    stress:    { label: "Stress & Mental",   bg: "#BF9C7C", border: "#000000" },
+    substance: { label: "Add-Ons",           bg: "#BF7C9C", border: "#000000" },
+    exercise:  { label: "Manual Entry",      bg: "#FC4C02", border: "#000000" },
+  };
+  const meta = catMeta[key];
+  const labelEl = document.getElementById("manualEntryLabel");
+  const labelText = document.getElementById("manualEntryLabelText");
   const border = document.getElementById("manualEntryBorder");
-  border.style.border = key === "exercise" ? "2px solid #FC4C02" : "none";
-  border.style.borderRadius = key === "exercise" ? "8px" : "0";
-  border.style.padding = key === "exercise" ? "16px 14px 14px" : "0";
+  if (meta) {
+    labelEl.style.display = "block";
+    labelText.textContent = meta.label;
+    labelText.style.background = meta.bg;
+    border.style.border = "2px solid " + meta.border;
+    border.style.borderRadius = "8px";
+    border.style.padding = "16px 14px 14px";
+  }
   if (key === "exercise") { stravaCheckToken(); buildScoreRows(); }
 }
 

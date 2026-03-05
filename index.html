@@ -320,7 +320,7 @@
   <button class="save-btn mono" id="saveBtn" onclick="saveEntry()">Save Entry</button>
 
   <div id="recentSection" style="margin-top:28px; display:none">
-    <div class="section-label">Recent</div>
+    <div class="section-label" id="recentLabel">Recent</div>
     <div id="recentList"></div>
   </div>
 </div>
@@ -1267,7 +1267,7 @@ function entryHTML(e, showDelete) {
       <span class="entry-icon" style="color:${cat.color}">${cat.icon}</span>
       <div style="flex:1;min-width:0">
         <div class="entry-cat mono" style="color:${cat.color}">${cat.label}</div>
-        <div class="entry-time mono">${formatTime(e.ts)}</div>
+        <div class="entry-time mono">${formatDate(e.ts)} · ${formatTime(e.ts)}</div>
         <div class="entry-note">${e.note}</div>
         ${scores}
       </div>
@@ -1305,10 +1305,13 @@ function deleteEntry(id) {
 function updateUI() {
   document.getElementById("entryCount").textContent = entries.length + " entries logged";
 
-  const recent = entries.slice(0, 3);
+  const catEntries = entries.filter(e => e.category === currentCategory);
+  const recent = catEntries.slice(0, 5);
   const recentSection = document.getElementById("recentSection");
   if (recent.length > 0) {
     recentSection.style.display = "block";
+    const catLabel = CATEGORIES[currentCategory]?.label || "Recent";
+    document.getElementById("recentLabel").textContent = "Recent — " + catLabel;
     document.getElementById("recentList").innerHTML = recent.map(e => entryHTML(e, true)).join("");
   } else {
     recentSection.style.display = "none";
@@ -1539,11 +1542,12 @@ async function stravaLoadActivities() {
     const after = prev.length > 0
       ? Math.floor(new Date(prev[0].start_date_local).getTime() / 1000)
       : 0;
+    const before = Math.floor(Date.now() / 1000);
 
     const resp = await fetch(WORKER + "?service=strava-activities", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ access_token: t.access_token, refresh_token: t.refresh_token, expires_at: t.expires_at, after }),
+      body: JSON.stringify({ access_token: t.access_token, refresh_token: t.refresh_token, expires_at: t.expires_at, after, before }),
     });
     const data = await resp.json();
     if (data.access_token) {

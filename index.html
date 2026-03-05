@@ -1629,16 +1629,25 @@ function stravaImportAsFocalEvent(activityId) {
   const hr = a.average_heartrate ? Math.round(a.average_heartrate)+"bpm avg HR" : "";
   const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed)+" pace" : "";
   const note = [a.name, a.type, dist, duration, pace, hr].filter(Boolean).join(" · ");
-  entries.unshift({ id: Date.now(), ts: new Date(a.start_date_local).getTime(), category: "exercise", note, scores: {} });
+  // Use start_date (UTC) for accurate timestamp
+  const activityTs = a.start_date ? new Date(a.start_date).getTime() : new Date(a.start_date_local).getTime();
+  entries.unshift({ id: Date.now(), ts: activityTs, category: "exercise", note, scores: {} });
   saveEntries();
-  // Switch to log entry tab and select focal events
   currentCategory = "exercise";
   buildCatGrid();
   document.getElementById("scoresCard").style.display = "block";
   document.getElementById("stravaSection").style.display = "block";
+  document.getElementById("manualEntryLabel").style.display = "block";
+  document.getElementById("manualEntryLabelText").textContent = "Manual Entry";
+  document.getElementById("manualEntryLabelText").style.background = "#FC4C02";
+  const border = document.getElementById("manualEntryBorder");
+  border.style.border = "2px solid #3A9A9A";
+  border.style.borderRadius = "8px";
+  border.style.padding = "16px 14px 14px";
   buildScoreRows();
   document.getElementById("transcriptText").value = note;
   transcript = note;
+  updateUI();
   updateSaveBtn();
 }
 

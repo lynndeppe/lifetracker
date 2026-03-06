@@ -276,6 +276,8 @@
         <div class="scores-title mono">Rate This Experience</div>
         <div id="scoreRows"></div>
       </div>
+
+      <button class="save-btn mono" id="saveBtn" onclick="saveEntry()">Save Entry</button>
     </div>
   </div>
 
@@ -316,8 +318,6 @@
 
     </div>
   </div>
-
-  <button class="save-btn mono" id="saveBtn" onclick="saveEntry()">Save Entry</button>
 
   <div id="recentSection" style="margin-top:28px; display:none">
     <div class="section-label" id="recentLabel">Recent</div>
@@ -1586,10 +1586,12 @@ function renderStravaActivities(activities, newCount) {
     const date = new Date(a.start_date_local).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
     const dist = a.distance ? (a.distance/1000).toFixed(2)+"km" : "";
     const duration = a.moving_time ? Math.floor(a.moving_time/60)+"min" : "";
-    const hr = a.average_heartrate ? "♥"+Math.round(a.average_heartrate)+"bpm" : "";
+    const hr = a.average_heartrate ? "♥"+Math.round(a.average_heartrate)+"bpm avg" : "";
+    const maxHr = a.max_heartrate ? "♥"+Math.round(a.max_heartrate)+"bpm max" : "";
+    const elev = a.total_elevation_gain ? "↑"+Math.round(a.total_elevation_gain)+"m elev" : "";
     const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed) : "";
     const icon = typeIcon[a.type] || "⚡";
-    const stats = [dist, duration, pace, hr].filter(Boolean).join(" · ");
+    const stats = [dist, duration, pace, hr, maxHr, elev].filter(Boolean).join(" · ");
     return `<div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;color:#111;font-weight:600;margin-bottom:2px;">${icon} ${a.name}</div>
@@ -1597,7 +1599,7 @@ function renderStravaActivities(activities, newCount) {
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">${stats}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-        <button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">+ Import</button>
+        <button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>
         <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
       </div>
     </div>`;
@@ -1627,8 +1629,10 @@ function stravaImportAsFocalEvent(activityId) {
   const dist = a.distance ? (a.distance/1000).toFixed(2)+"km" : "";
   const duration = a.moving_time ? Math.floor(a.moving_time/60)+"min" : "";
   const hr = a.average_heartrate ? Math.round(a.average_heartrate)+"bpm avg HR" : "";
+  const maxHr = a.max_heartrate ? Math.round(a.max_heartrate)+"bpm max HR" : "";
+  const elev = a.total_elevation_gain ? Math.round(a.total_elevation_gain)+"m elevation gain" : "";
   const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed)+" pace" : "";
-  const note = [a.name, a.type, dist, duration, pace, hr].filter(Boolean).join(" · ");
+  const note = [a.name, a.type, dist, duration, pace, hr, maxHr, elev].filter(Boolean).join(" · ");
   // Use start_date (UTC) for accurate timestamp
   const activityTs = a.start_date ? new Date(a.start_date).getTime() : new Date(a.start_date_local).getTime();
   entries.unshift({ id: Date.now(), ts: activityTs, category: "exercise", note, scores: {} });

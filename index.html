@@ -884,9 +884,10 @@ function confirmLabelScan() {
   if (!labelScanData) return;
   const qty = document.getElementById("labelQty").value.trim() || "1";
   const includeDaily = document.getElementById("labelIncludeDaily").checked;
+  const dailyPeriods = includeDaily ? [{ from: Date.now(), to: null }] : [];
   const name = labelScanData.name || "Supplement";
   const ingredients = labelScanData.ingredients || [];
-  supplements.push({ id: Date.now(), name, dose: "", qty, desc: "", ingredients, includeDaily });
+  supplements.push({ id: Date.now(), name, dose: "", qty, desc: "", ingredients, includeDaily, dailyPeriods });
   saveSupplements();
   document.getElementById("labelScanResult").style.display = "none";
   labelScanData = null;
@@ -914,8 +915,27 @@ function deleteSupplement(id) {
 function toggleDailySupp(id) {
   const s = supplements.find(s => s.id === id);
   if (!s) return;
+  const now = Date.now();
+  // Build period history if it doesn't exist yet
+  if (!s.dailyPeriods) {
+    // Retroactively treat prior ON state as active from the beginning
+    s.dailyPeriods = s.includeDaily ? [{ from: 0, to: null }] : [];
+  }
+  if (!s.includeDaily) {
+    // Turning ON — open a new period starting now
+    s.dailyPeriods.push({ from: now, to: null });
+  } else {
+    // Turning OFF — close the currently open period
+    const open = s.dailyPeriods.find(p => p.to === null);
+    if (open) open.to = now;
+  }
   s.includeDaily = !s.includeDaily;
   saveSupplements();
+}
+function suppWasActiveAt(s, ts) {
+  // If no period history, fall back to current includeDaily flag
+  if (!s.dailyPeriods || !s.dailyPeriods.length) return !!s.includeDaily;
+  return s.dailyPeriods.some(p => ts >= p.from && (p.to === null || ts <= p.to));
 }
 function logCheckedSupplements() {
   const checked = supplements.filter(s => {
@@ -990,12 +1010,12 @@ function renderSuppQuickLog() {
           </div>
 
           <!-- Row 3: daily toggle -->
-          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);">
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);flex-wrap:wrap;">
             <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Include Daily</span>
             <div onclick="toggleDailySupp(${s.id})" style="position:relative;width:36px;height:20px;border-radius:10px;background:${s.includeDaily ? '#3A9A9A' : 'rgba(0,0,0,0.15)'};cursor:pointer;transition:background 0.2s;flex-shrink:0;">
               <div style="position:absolute;top:3px;left:${s.includeDaily ? '19px' : '3px'};width:14px;height:14px;border-radius:50%;background:white;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
             </div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:${s.includeDaily ? '#3A9A9A' : '#aaa'};">${s.includeDaily ? 'ON — auto-logs each day' : 'OFF'}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:${s.includeDaily ? '#3A9A9A' : '#aaa'};">${s.includeDaily ? 'ON' : 'OFF'}</span>
           </div>
           <!-- Ingredient table for scanned supplements -->
           ${s.ingredients && s.ingredients.length ? `<div style="margin-top:10px;">
@@ -1406,9 +1426,16 @@ async function runAnalysis() {
   document.getElementById("analysisCard").style.display = "none";
   document.getElementById("analysisError").style.display = "none";
 
-  const behaviors = entries.filter(e =>
-    selectedCats.includes(e.category) && e.ts >= windowStart && e.ts < focalEntry.ts
-  );
+  const behaviors = entries.filter(e => {
+    if (!selectedCats.includes(e.category)) return false;
+    if (e.ts < windowStart || e.ts >= focalEntry.ts) return false;
+    // For supplement entries, check if that supplement was active at the time of the entry
+    if (e.category === "supplement" && e.suppId) {
+      const s = supplements.find(s => s.id === e.suppId);
+      if (s && !suppWasActiveAt(s, e.ts)) return false;
+    }
+    return true;
+  });
 
   const focalDate = new Date(focalEntry.ts).toLocaleString();
   const focalScores = focalEntry.scores ? Object.entries(focalEntry.scores).map(([k,v]) => `${k}: ${v}/5`).join(", ") : "no scores";
@@ -1748,7 +1775,7 @@ function autoLogDailySupplements() {
       let note = s.name;
       if (s.qty && s.qty !== "1") note += ` x ${s.qty}`;
       if (s.dose) note += ` - ${s.dose}`;
-      newEntries.push({ id: Date.now() + Math.random(), ts: Date.now(), category: "supplement", note, autoLogged: true });
+      newEntries.push({ id: Date.now() + Math.random(), ts: Date.now(), category: "supplement", note, autoLogged: true, suppId: s.id });
     }
   });
 

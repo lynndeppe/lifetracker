@@ -390,12 +390,21 @@
 
     <!-- Scanned result table -->
     <div id="labelScanResult" style="display:none;margin-top:12px;">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Qty for this entry</div>
-      <input id="labelQty" type="text" maxlength="2" value="1"
-        style="padding:8px 10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:50px;text-align:center;margin-bottom:10px;" />
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Qty / Entry</div>
+          <input id="labelQty" type="text" maxlength="2" value="1"
+            style="padding:8px 10px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:50px;text-align:center;" />
+        </div>
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Include<br>Daily</div>
+          <input id="labelIncludeDaily" type="checkbox"
+            style="width:22px;height:22px;accent-color:#3A9A9A;cursor:pointer;margin-top:2px;" />
+        </div>
+      </div>
       <div id="labelTable" style="overflow-x:auto;margin-bottom:10px;"></div>
       <div style="display:flex;gap:8px;">
-        <button onclick="confirmLabelScan()" style="flex:1;padding:11px;background:#5A8F4A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
+        <button onclick="confirmLabelScan()" style="flex:1;padding:11px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
         <button onclick="document.getElementById('labelScanResult').style.display='none'" style="padding:11px 16px;background:none;border:1px solid rgba(0,0,0,0.1);border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;color:#444;">✕</button>
       </div>
     </div>
@@ -874,14 +883,15 @@ function renderLabelTable(parsed) {
 function confirmLabelScan() {
   if (!labelScanData) return;
   const qty = document.getElementById("labelQty").value.trim() || "1";
+  const includeDaily = document.getElementById("labelIncludeDaily").checked;
   const name = labelScanData.name || "Supplement";
   const ingredients = labelScanData.ingredients || [];
-  // Store ingredients as structured array for table display
-  supplements.push({ id: Date.now(), name, dose: "", qty, desc: "", ingredients });
+  supplements.push({ id: Date.now(), name, dose: "", qty, desc: "", ingredients, includeDaily });
   saveSupplements();
   document.getElementById("labelScanResult").style.display = "none";
   labelScanData = null;
   document.getElementById("labelQty").value = "1";
+  document.getElementById("labelIncludeDaily").checked = false;
 }
 
 function addSupplement() {

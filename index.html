@@ -26,7 +26,7 @@
     --food: #8BAF7C;
     --stress: #BF9C7C;
     --substance: #BF7C9C;
-    --supplement: #9C7CBF;
+    --supplement: #3A9A9A;
     --exercise: #7CBFBF;
   }
 
@@ -63,7 +63,7 @@
   /* Foundation sub-tabs */
   .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
   .sub-tab { padding: 7px 14px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: transparent; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; transition: all 0.2s; -webkit-tap-highlight-color: transparent; text-transform: uppercase; }
-  .sub-tab.active { background: #9C7CBF; color: white; border-color: #9C7CBF; }
+  .sub-tab.active { background: #3A9A9A; color: white; border-color: #3A9A9A; }
 
   /* Main content */
   .content { max-width: 640px; margin: 20px auto; padding: 0 20px; }
@@ -367,7 +367,7 @@
           style="padding:10px 8px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:68px;" />
       </div>
     </div>
-    <button onclick="addSupplement()" style="width:100%;padding:11px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
+    <button onclick="addSupplement()" style="width:100%;padding:11px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
   </div>
 
   <!-- Option 2: Photo scan -->
@@ -375,18 +375,18 @@
     <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:12px;font-weight:600;">② Scan Label with AI</div>
 
     <div style="display:flex;gap:8px;">
-      <button onclick="triggerLabelScan(true)" style="flex:1;padding:12px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <button onclick="triggerLabelScan(true)" style="flex:1;padding:12px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Camera
       </button>
-      <button onclick="triggerLabelScan(false)" style="flex:1;padding:12px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <button onclick="triggerLabelScan(false)" style="flex:1;padding:12px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         Gallery
       </button>
     </div>
 
     <!-- AI processing status -->
-    <div id="labelScanStatus" style="display:none;margin-top:10px;padding:10px;background:rgba(122,85,0,0.08);border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;color:#7A5500;text-align:center;">Reading label...</div>
+    <div id="labelScanStatus" style="display:none;margin-top:10px;padding:10px;background:rgba(58,154,154,0.08);border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;color:#3A9A9A;text-align:center;">Reading label...</div>
 
     <!-- Scanned result table -->
     <div id="labelScanResult" style="display:none;margin-top:12px;">
@@ -460,7 +460,7 @@
         <input type="hidden" id="strongSlider" value="6">
       </div>
 
-      <button onclick="saveRanges()" style="width:100%;padding:11px;background:#7A5500;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Save Ranges</button>
+      <button onclick="saveRanges()" style="width:100%;padding:11px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Save Ranges</button>
       <div id="rangesSaved" style="display:none;text-align:center;margin-top:8px;font-family:'DM Mono',monospace;font-size:11px;color:#5A8F4A;">&#10003; Saved</div>
     </div>
 
@@ -922,7 +922,7 @@ function logCheckedSupplements() {
     btn.style.background = "#5A8F4A";
     setTimeout(() => {
       btn.textContent = "Log Selected";
-      btn.style.background = "#9C7CBF";
+      btn.style.background = "#3A9A9A";
       renderSuppQuickLog();
     }, 1800);
   }
@@ -995,7 +995,7 @@ function renderSuppQuickLog() {
       `).join("")}
     </div>
     <button id="suppLogBtn" onclick="logCheckedSupplements()"
-      style="width:100%;padding:13px;background:#9C7CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;-webkit-tap-highlight-color:transparent;">
+      style="width:100%;padding:13px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;-webkit-tap-highlight-color:transparent;">
       Log Selected
     </button>
   `;
@@ -1094,8 +1094,12 @@ function startRecording() {
     return;
   }
   hideVoiceError();
-  accumulated = document.getElementById("transcriptText").value.trim();
-  transcript = accumulated;
+  const txt = document.getElementById("transcriptText");
+  // Capture cursor position and existing text before recording starts
+  const cursorStart = txt.selectionStart;
+  const cursorEnd = txt.selectionEnd;
+  const existingText = txt.value;
+  accumulated = "";
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const rec = new SR();
@@ -1110,7 +1114,12 @@ function startRecording() {
         accumulated = accumulated ? accumulated + " " + word : word;
       }
     }
-    transcript = accumulated;
+    // Insert at cursor position, replacing any selection
+    const before = existingText.slice(0, cursorStart);
+    const after = existingText.slice(cursorEnd);
+    const spaceBefore = (before && !before.endsWith(" ")) ? " " : "";
+    const spaceAfter = (after && !after.startsWith(" ")) ? " " : "";
+    transcript = before + spaceBefore + accumulated + spaceAfter + after;
     updateTranscript();
   };
 
@@ -1323,7 +1332,7 @@ function updateUI() {
 
 // Focal event picker
 function renderFocalEventList() {
-  const focal = entries.filter(e => e.category === "exercise" && e.scores).slice(0, 10);
+  const focal = entries.filter(e => e.category === "exercise").slice(0, 10);
   const el = document.getElementById("focalEventList");
   if (!focal.length) {
     el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:12px;color:#777;">No Focal Events logged yet.</div>';

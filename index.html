@@ -911,6 +911,12 @@ function deleteSupplement(id) {
   supplements = supplements.filter(s => s.id !== id);
   saveSupplements();
 }
+function toggleDailySupp(id) {
+  const s = supplements.find(s => s.id === id);
+  if (!s) return;
+  s.includeDaily = !s.includeDaily;
+  saveSupplements();
+}
 function logCheckedSupplements() {
   const checked = supplements.filter(s => {
     const cb = document.getElementById("suppCheck_" + s.id);
@@ -959,7 +965,7 @@ function renderSuppQuickLog() {
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
             <input type="checkbox" id="suppCheck_${s.id}" checked
               style="width:20px;height:20px;accent-color:#9C7CBF;cursor:pointer;flex-shrink:0;" />
-            <div style="flex:1;font-size:14px;color:#111;font-weight:500;">${s.name}</div>
+            <div style="flex:1;font-size:14px;color:#111;font-weight:500;">${s.name}${s.includeDaily ? ' <span style="font-family:\'DM Mono\',monospace;font-size:9px;background:#3A9A9A;color:white;padding:2px 6px;border-radius:3px;letter-spacing:1px;vertical-align:middle;">DAILY</span>' : ""}</div>
             <button onclick="deleteSupplement(${s.id})" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:16px;padding:2px 4px;-webkit-tap-highlight-color:transparent;">×</button>
           </div>
 
@@ -983,14 +989,21 @@ function renderSuppQuickLog() {
             </div>
           </div>
 
-          ${s.ingredients && s.ingredients.length ? `
+          <!-- Row 3: daily toggle -->
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);">
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Include Daily</span>
+            <div onclick="toggleDailySupp(${s.id})" style="position:relative;width:36px;height:20px;border-radius:10px;background:${s.includeDaily ? '#3A9A9A' : 'rgba(0,0,0,0.15)'};cursor:pointer;transition:background 0.2s;flex-shrink:0;">
+              <div style="position:absolute;top:3px;left:${s.includeDaily ? '19px' : '3px'};width:14px;height:14px;border-radius:50%;background:white;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+            </div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:${s.includeDaily ? '#3A9A9A' : '#aaa'};">${s.includeDaily ? 'ON — auto-logs each day' : 'OFF'}</span>
+          </div>
           <!-- Ingredient table for scanned supplements -->
-          <div style="margin-top:10px;">
+          ${s.ingredients && s.ingredients.length ? `<div style="margin-top:10px;">
             <table style="width:100%;border-collapse:collapse;background:white;border-radius:6px;overflow:hidden;border:1px solid rgba(0,0,0,0.08);">
               <thead>
-                <tr style="background:rgba(156,124,191,0.1);">
-                  <th style="padding:6px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#9C7CBF;">Ingredient</th>
-                  <th style="padding:6px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#9C7CBF;">Amount</th>
+                <tr style="background:rgba(58,154,154,0.1);">
+                  <th style="padding:6px 10px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#3A9A9A;">Ingredient</th>
+                  <th style="padding:6px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#3A9A9A;">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -1711,12 +1724,55 @@ window.addEventListener("DOMContentLoaded", function() {
     .catch(e => console.error("Strava auth error:", e));
 });
 
+// ── Auto-log daily supplements ────────────────────────────────────
+function autoLogDailySupplements() {
+  const dailySupps = supplements.filter(s => s.includeDaily);
+  if (!dailySupps.length) return;
+
+  const todayStr = new Date().toDateString();
+  const lastAutoLog = localStorage.getItem("bl_last_auto_log");
+  if (lastAutoLog === todayStr) return; // already ran today
+
+  // Find which daily supplements haven't been logged today yet
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
+
+  const newEntries = [];
+  dailySupps.forEach(s => {
+    const alreadyLogged = entries.some(e =>
+      e.category === "supplement" &&
+      e.note && e.note.startsWith(s.name) &&
+      e.ts >= todayStart.getTime() && e.ts <= todayEnd.getTime()
+    );
+    if (!alreadyLogged) {
+      let note = s.name;
+      if (s.qty && s.qty !== "1") note += ` x ${s.qty}`;
+      if (s.dose) note += ` - ${s.dose}`;
+      newEntries.push({ id: Date.now() + Math.random(), ts: Date.now(), category: "supplement", note, autoLogged: true });
+    }
+  });
+
+  if (newEntries.length) {
+    entries.unshift(...newEntries);
+    saveEntries();
+    // Brief toast notification
+    const toast = document.createElement("div");
+    toast.textContent = `✓ Auto-logged ${newEntries.length} daily supplement${newEntries.length > 1 ? "s" : ""}`;
+    toast.style.cssText = "position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#3A9A9A;color:white;padding:10px 20px;border-radius:20px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;z-index:9999;pointer-events:none;";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  localStorage.setItem("bl_last_auto_log", todayStr);
+}
+
 // ── Init ──────────────────────────────────────────────────────────
 loadEntries();
 buildCatGrid();
 selectCat("sleep");
 buildScoreRows();
 renderSuppQuickLog();
+autoLogDailySupplements();
 </script>
 
 </body>

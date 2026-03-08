@@ -1315,7 +1315,7 @@ function formatDate(ts) {
 }
 
 function entryHTML(e, showDelete) {
-  const cat = CATEGORIES[e.category];
+  const cat = CATEGORIES[e.category] || { label: e.category, icon: "◈", color: "#3A9A9A" };
   const scores = e.scores ? `<div class="entry-scores">${Object.entries(e.scores).map(([k,v]) => `<span class="score-tag">${k}: ${v}/5</span>`).join("")}</div>` : "";
   return `
     <div class="entry-card">
@@ -1345,7 +1345,7 @@ function renderHistory() {
   list.innerHTML = Object.entries(byDay).map(([day, dayEntries]) => `
     <div class="day-group">
       <div class="day-label">${day}</div>
-      ${dayEntries.map(e => entryHTML(e, true)).join("")}
+      ${dayEntries.map(e => { try { return entryHTML(e, true); } catch(err) { return ""; } }).join("")}
     </div>
   `).join("");
 }
@@ -1367,7 +1367,7 @@ function updateUI() {
     recentSection.style.display = "block";
     const catLabel = CATEGORIES[currentCategory]?.label || "Recent";
     document.getElementById("recentLabel").textContent = "Recent — " + catLabel;
-    document.getElementById("recentList").innerHTML = recent.map(e => entryHTML(e, true)).join("");
+    document.getElementById("recentList").innerHTML = recent.map(e => { try { return entryHTML(e, true); } catch(err) { return ""; } }).join("");
   } else {
     recentSection.style.display = "none";
   }

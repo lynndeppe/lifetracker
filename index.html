@@ -50,15 +50,18 @@
   .header-count { margin-top: 3px; font-size: 12px; color: var(--muted); }
 
   /* Tabs */
-  .tabs { max-width: 640px; margin: 20px auto 0; padding: 0 20px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .tabs::-webkit-scrollbar { display: none; }
+  .tabs { max-width: 640px; margin: 20px auto 0; padding: 0 20px; display: flex; flex-direction: column; gap: 4px; }
+  .tab-row-bottom { display: flex; gap: 4px; }
+  .tab-row-bottom .tab { flex: 1; text-align: center; }
   .tab {
     padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px;
-    cursor: pointer; background: #D6F0EF; color: #2A7A7A;
+    cursor: pointer; background: #3A9A9A; color: #fff;
     font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px;
     transition: all 0.2s; -webkit-tap-highlight-color: transparent; white-space: nowrap; flex-shrink: 0;
   }
-  .tab.active { background: #3A9A9A; color: #fff; border-color: #3A9A9A; }
+  .tab.active { background: #7ABF3A; color: #fff; border-color: #7ABF3A; }
+  .tab-patterns { width: 100%; text-align: center; background: #3A9A9A !important; color: white !important; border-color: #3A9A9A !important; font-size: 11px !important; letter-spacing: 2px !important; padding: 10px !important; }
+  .tab-patterns.active { background: #7ABF3A !important; border-color: #7ABF3A !important; }
 
   /* Foundation sub-tabs */
   .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
@@ -199,7 +202,7 @@
     cursor: pointer; margin-bottom: 24px; transition: all 0.2s;
     text-transform: uppercase; -webkit-tap-highlight-color: transparent;
   }
-  .analyze-btn.ready { background: var(--gold); color: #1A1410; }
+  .analyze-btn.ready { background: #4A7A3A; color: white; }
   .analyze-btn.disabled { background: #1A1610; color: var(--dim); cursor: default; }
   .analyzing-msg { text-align: center; padding: 40px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; }
   .analysis-card { padding: 22px; background: rgba(232,213,176,0.04); border: 1px solid rgba(232,213,176,0.12); border-radius: 8px; }
@@ -227,10 +230,12 @@
 </div>
 
 <div class="tabs">
-  <button class="tab active mono" onclick="showTab('log')">Log Entry</button>
-  <button class="tab mono" onclick="showTab('analyze')">Patterns</button>
-  <button class="tab mono" onclick="showTab('history')">History</button>
-  <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
+  <button class="tab tab-patterns mono" onclick="showTab('analyze')" id="tabPatterns">Pattern Discovery</button>
+  <div class="tab-row-bottom">
+    <button class="tab active mono" onclick="showTab('log')">Log Entries</button>
+    <button class="tab mono" onclick="showTab('history')">Entry History</button>
+    <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
+  </div>
 </div>
 
 <!-- LOG TAB -->
@@ -1048,16 +1053,19 @@ function renderSuppQuickLog() {
 
 // ── Tab switching ─────────────────────────────────────────────────
 function showTab(name) {
-  ["log","analyze","history","foundation"].forEach((t,i) => {
+  ["log","analyze","history","foundation"].forEach(t => {
     const el = document.getElementById("tab-"+t);
     if (el) el.style.display = t===name?"block":"none";
-    const btn = document.querySelectorAll(".tab")[i];
-    if (btn) btn.classList.toggle("active", t===name);
+  });
+  // Update active state on all tab buttons
+  document.querySelectorAll(".tab").forEach(btn => {
+    const fn = btn.getAttribute("onclick") || "";
+    const match = fn.match(/showTab\('(\w+)'\)/);
+    if (match) btn.classList.toggle("active", match[1] === name);
   });
   if (name==="history") renderHistory();
   if (name==="foundation") { renderSuppQuickLog(); setTimeout(() => { if(window.initRangeBar) window.initRangeBar(); }, 50); }
   if (name==="analyze") renderFocalEventList();
-
 }
 
 // ── Category picker ───────────────────────────────────────────────
@@ -1066,7 +1074,7 @@ function buildCatGrid() {
   grid.innerHTML = Object.entries(CATEGORIES).map(([key, c]) => `
     <button class="cat-btn mono ${key === currentCategory ? 'active' : ''}" id="cat-${key}"
       onclick="selectCat('${key}')"
-      style="${key === currentCategory ? 'border-color:#3A9A9A;border-width:4px;color:#3A9A9A;' : ''}">
+      style="${key === currentCategory ? 'border-color:#7ABF3A;border-width:4px;color:#111;' : ''}">
       <span class="cat-icon">${c.icon}</span>${c.label}
     </button>
   `).join("");
@@ -1402,7 +1410,7 @@ function updateAnalyzeBtn() {
   const btn = document.getElementById("analyzeBtn");
   if (!btn) return;
   if (selectedFocalEventId) {
-    btn.classList.add("ready"); btn.classList.remove("disabled"); btn.textContent = "Analyze Patterns";
+    btn.classList.add("ready"); btn.classList.remove("disabled"); btn.textContent = "Analyze Leading Behaviors";
   } else {
     btn.classList.remove("ready"); btn.classList.add("disabled"); btn.textContent = "Select a Focal Event First";
   }

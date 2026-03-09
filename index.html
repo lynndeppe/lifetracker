@@ -956,26 +956,48 @@ function deleteSupplement(id) {
   supplements = supplements.filter(s => s.id !== id);
   saveSupplements();
 }
-function calcSuppTotal(qty, dose) {
+function calcServingRatio(qty, servSize) {
   const q = parseFloat(qty) || 1;
-  if (!dose || !dose.trim()) return "—";
-  // Extract number and unit from dose string e.g. "500mg", "1.5g", "250 mcg"
-  const match = dose.trim().match(/^([0-9]+\.?[0-9]*)\s*([a-zA-Zµμ%]*)/);
-  if (!match) return q > 1 ? q + "×" + dose : dose;
+  const s = parseFloat(servSize) || 1;
+  return q / s;
+}
+function formatRatio(ratio) {
+  // Express as fraction or decimal serving e.g. "1 serving", "0.5 serving", "1.3 servings"
+  const rounded = Math.round(ratio * 1000) / 1000;
+  const label = rounded === 1 ? "serving" : "servings";
+  return rounded + " " + label;
+}
+function scaleIngredientAmount(amount, ratio) {
+  if (!amount || ratio === 1) return amount;
+  const match = amount.trim().match(/^([0-9]+\.?[0-9]*)\s*([a-zA-Zµμ%]*)/);
+  if (!match) return amount;
   const num = parseFloat(match[1]);
   const unit = match[2] || "";
-  if (isNaN(num)) return q > 1 ? q + "×" + dose : dose;
-  const total = Math.round((num * q) * 1000) / 1000;
-  return total + unit;
+  if (isNaN(num)) return amount;
+  const scaled = Math.round(num * ratio * 1000) / 1000;
+  return scaled + unit;
+}
+function calcSuppTotal(qty, servSize) {
+  if (!servSize || !servSize.trim()) return "—";
+  const ratio = calcServingRatio(qty, servSize);
+  return formatRatio(ratio);
 }
 function updateSuppTotal(id) {
-  const qtyEl  = document.getElementById("suppQty_"     + id);
-  const doseEl = document.getElementById("suppDoseLog_" + id);
-  const totalEl = document.getElementById("suppTotal_"  + id);
+  const qtyEl   = document.getElementById("suppQty_"     + id);
+  const doseEl  = document.getElementById("suppDoseLog_" + id);
+  const totalEl = document.getElementById("suppTotal_"   + id);
   if (!totalEl) return;
-  const qty  = qtyEl  ? qtyEl.value  : "1";
-  const dose = doseEl ? doseEl.value : "";
-  totalEl.textContent = calcSuppTotal(qty, dose);
+  const qty      = qtyEl  ? qtyEl.value  : "1";
+  const servSize = doseEl ? doseEl.value : "";
+  totalEl.textContent = calcSuppTotal(qty, servSize);
+  // Also update ingredient amounts in table
+  const s = supplements.find(s => String(s.id) === String(id));
+  if (!s || !s.ingredients || !s.ingredients.length) return;
+  const ratio = calcServingRatio(qty, servSize);
+  s.ingredients.forEach((ing, idx) => {
+    const cell = document.getElementById(`supp-ing-${id}-${idx}`);
+    if (cell) cell.textContent = scaleIngredientAmount(ing.amount, ratio);
+  });
 }
 function saveSuppField(id, field, value) {
   const s = supplements.find(s => String(s.id) === String(id));
@@ -1025,13 +1047,12 @@ function logCheckedSupplements() {
   });
   localStorage.setItem("bl_supplements", JSON.stringify(supplements));
   checked.forEach(s => {
-    const qty  = s.qty  || "1";
-    const desc = s.desc || "";
-    const dose = s.dose || "";
-    const total = calcSuppTotal(qty, dose);
+    const qty      = s.qty  || "1";
+    const desc     = s.desc || "";
+    const servSize = s.dose || "";
+    const total    = servSize ? formatRatio(calcServingRatio(qty, servSize)) : (qty !== "1" ? qty + " units" : "");
     let note = `${s.name}`;
-    if (qty && qty !== "1") note += ` × ${qty}`;
-    if (dose) note += ` — ${total}`;
+    if (total) note += ` — ${total}`;
     if (desc) note += `. ${desc}`;
     entries.unshift({ id: Date.now(), ts: Date.now(), category: "supplement", note });
   });
@@ -1087,7 +1108,7 @@ function renderSuppQuickLog() {
                 style="${inputStyle}width:100%;box-sizing:border-box;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;">
-              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Serv Size</span>
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Serv Size (units)</span>
               <input id="suppDoseLog_${s.id}" type="text" maxlength="8" value="${s.dose || ""}"
                 placeholder="e.g. 500mg"
                 onblur="saveSuppField(${s.id},'dose',this.value);updateSuppTotal(${s.id})"
@@ -1119,10 +1140,10 @@ function renderSuppQuickLog() {
                 </tr>
               </thead>
               <tbody>
-                ${s.ingredients.map(i => `
+                ${s.ingredients.map((i, idx) => `
                   <tr>
                     <td style="padding:6px 10px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:12px;color:#111;">${i.ingredient}</td>
-                    <td style="padding:6px 10px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:12px;color:#555;font-family:'DM Mono',monospace;text-align:right;white-space:nowrap;">${i.amount}</td>
+                    <td id="supp-ing-${s.id}-${idx}" style="padding:6px 10px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:12px;color:#555;font-family:'DM Mono',monospace;text-align:right;white-space:nowrap;">${scaleIngredientAmount(i.amount, calcServingRatio(s.qty||1, s.dose||1))}</td>
                   </tr>`).join("")}
               </tbody>
             </table>
@@ -1716,17 +1737,19 @@ function buildSuppReportLines() {
     ""
   ];
   sorted.forEach(s => {
-    const servSize = s.dose ? s.dose : "—";
-    const qty = s.qty && s.qty !== "1" ? s.qty : "1";
-    const total = calcSuppTotal(qty, s.dose);
+    const servSize = s.dose || "—";
+    const qty = s.qty || "1";
+    const ratio = calcServingRatio(qty, s.dose || "1");
+    const totalLabel = s.dose ? formatRatio(ratio) : "—";
     const daily = s.includeDaily ? "  [Daily]" : "";
     lines.push(s.name.toUpperCase());
-    lines.push("  Serving Size: " + servSize + "  |  Qty: " + qty + "  |  Total: " + total + daily);
+    lines.push("  Serv Size: " + servSize + " units  |  Qty: " + qty + "  |  Total: " + totalLabel + daily);
     lines.push("  Intended Purpose: " + (s.desc || "—"));
     if (s.ingredients && s.ingredients.length) {
-      lines.push("  Ingredients:");
+      lines.push("  Ingredients (scaled to qty):");
       s.ingredients.forEach(i => {
-        lines.push("    · " + i.ingredient + (i.amount ? "  " + i.amount : ""));
+        const scaled = scaleIngredientAmount(i.amount, ratio);
+        lines.push("    · " + i.ingredient + (scaled ? "  " + scaled : ""));
       });
     }
     lines.push("");

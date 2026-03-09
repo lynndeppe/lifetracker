@@ -1876,7 +1876,7 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
         contents: [{
           parts: [{ text: prompt }]
         }],
-        generationConfig: { maxOutputTokens: 4000 }
+        generationConfig: { maxOutputTokens: 8192 }
       })
     });
     const raw = await res.text();
@@ -1893,7 +1893,14 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
                || data?.error?.message
                || JSON.stringify(data).slice(0, 400);
-    body.textContent = text;
+    // Render markdown-style formatting as HTML
+    const html = text
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/^#{1,3} (.+)$/gm, "<div style='font-family:\"DM Mono\",monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:14px 0 6px;font-weight:700;'>$1</div>")
+      .replace(/\n/g, "<br>");
+    body.innerHTML = html;
     output.style.display = "block";
     btn.textContent = "Regenerate with AI";
   } catch(e) {
@@ -1906,14 +1913,14 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
 
 function downloadIngredientReport() {
   const body = document.getElementById("ingReportBody");
-  if (!body || !body.textContent.trim()) return;
+  if (!body || !body.innerText.trim()) return;
   const header = [
     "MY BIO PERFORMANCE — INGREDIENT ANALYSIS",
     "Generated: " + new Date().toLocaleDateString([], { weekday:"long", year:"numeric", month:"long", day:"numeric" }),
     "─".repeat(44),
     ""
   ].join("\n");
-  const blob = new Blob([header + body.textContent], { type: "text/plain" });
+  const blob = new Blob([header + body.innerText], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

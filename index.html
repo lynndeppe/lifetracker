@@ -1833,20 +1833,36 @@ async function generateIngredientReport() {
 
   // Build prompt data
   const ingLines = Object.values(ingMap).map(ing => {
-    const sources = ing.entries.map(e => `${e.supp} (label: ${e.labelAmount || "?"}, you take: ${e.scaledAmount || "?"})`).join("; ");
-    return `- ${ing.displayName}: ${sources}`;
+    // Try to sum numeric amounts across all sources
+    let totalNum = 0;
+    let unit = "";
+    let canSum = true;
+    ing.entries.forEach(e => {
+      const a = e.scaledAmount || e.labelAmount || "";
+      const m = a.trim().match(/^([0-9]+\.?[0-9]*)\s*([a-zA-Zµμ%]*)/);
+      if (m) {
+        totalNum += parseFloat(m[1]) || 0;
+        if (!unit) unit = m[2];
+        else if (unit !== m[2]) canSum = false;
+      } else { canSum = false; }
+    });
+    const combinedAmt = canSum && totalNum > 0
+      ? (Math.round(totalNum * 1000) / 1000) + unit
+      : ing.entries.map(e => e.scaledAmount || e.labelAmount || "?").join(" + ");
+    const sources = ing.entries.map(e => e.supp).join(", ");
+    return `- ${ing.displayName}: ${combinedAmt} total (from: ${sources}; label per serving: ${ing.entries.map(e => e.labelAmount || "?").join(", ")})`
   }).join("\n");
 
-  const prompt = `You are a sports nutrition and health scientist. I have listed all the ingredients from my supplement stack below, with the amounts I personally consume per session.
+  const prompt = `You are a sports nutrition and health scientist. Below is my complete supplement ingredient stack. Amounts listed are my NET TOTAL intake per session — already scaled by how many units I take versus the label serving size, and summed across all products containing that ingredient.
 
 YOUR TASK:
 1. Group these ingredients by category (e.g. Vitamins, Minerals, Amino Acids, Adaptogens, Fatty Acids, Probiotics, Herbal Extracts, etc.)
 2. For each ingredient list:
-   - The amount I take (from the data below)
-   - The science-based recommended daily dose range for healthy adults (cite general research consensus)
+   - The net amount I take (from the data below)
+   - The science-based recommended daily dose range for healthy adults
    - A brief note on primary function/benefit
    - A status: WITHIN RANGE / BELOW RANGE / ABOVE RANGE / UNKNOWN (if no clear RDA exists)
-3. After all groups, add a SHORT SUMMARY section noting any notable gaps, redundancies, or cautions.
+3. After all groups, add a SHORT SUMMARY noting any notable gaps, redundancies, or cautions based on my actual intake.
 
 Format each ingredient like this:
   INGREDIENT NAME
@@ -1855,7 +1871,7 @@ Format each ingredient like this:
     Function: [brief]
     Status: [status]
 
-MY INGREDIENTS:
+MY NET INGREDIENT TOTALS:
 ${ingLines}
 
 Be factual, concise, and science-based. Do not recommend purchasing anything.`;

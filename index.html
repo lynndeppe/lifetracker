@@ -1331,19 +1331,81 @@ function formatDate(ts) {
 
 function entryHTML(e, showDelete) {
   const cat = CATEGORIES[e.category] || { label: e.category, icon: "◈", color: "#3A9A9A" };
-  const scores = e.scores ? `<div class="entry-scores">${Object.entries(e.scores).map(([k,v]) => `<span class="score-tag">${k}: ${v}/5</span>`).join("")}</div>` : "";
+  const hasScores = e.scores && Object.keys(e.scores).length > 0;
+  const scores = hasScores ? `<div class="entry-scores">${Object.entries(e.scores).map(([k,v]) => `<span class="score-tag">${k}: ${v}/5</span>`).join("")}</div>` : "";
+  const rateBtn = e.category === "exercise" ? `
+    <button onclick="toggleEntryScorePanel('${e.id}')"
+      style="margin-top:8px;padding:5px 10px;border:1px solid ${hasScores ? '#7ABF3A' : 'rgba(0,0,0,0.15)'};background:${hasScores ? 'rgba(122,191,58,0.08)' : 'none'};border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:${hasScores ? '#4A8A1A' : '#777'};">
+      ${hasScores ? "✎ Edit Scores" : "+ Rate Experience"}
+    </button>
+    <div id="entry-score-panel-${e.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.08);">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this experience</div>
+      ${METRICS.map(m => `
+        <div style="margin-bottom:8px;">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}</div>
+          <div style="display:flex;gap:4px;">
+            ${[1,2,3,4,5].map(v => `
+              <button id="entry-score-${e.id}-${m.replace(/ /g,'_')}-${v}"
+                onclick="setEntryScore('${e.id}','${m}',${v})"
+                style="flex:1;padding:6px 0;border:1px solid ${e.scores && e.scores[m]===v ? '#7ABF3A' : 'rgba(0,0,0,0.12)'};border-radius:4px;background:${e.scores && e.scores[m]===v ? '#7ABF3A' : 'white'};color:${e.scores && e.scores[m]===v ? 'white' : '#111'};font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;">${v}</button>
+            `).join("")}
+          </div>
+        </div>
+      `).join("")}
+      <button onclick="saveEntryScores('${e.id}')"
+        style="width:100%;margin-top:4px;padding:9px;background:#7ABF3A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">
+        Save Scores
+      </button>
+    </div>` : "";
   return `
-    <div class="entry-card">
-      <span class="entry-icon" style="color:${cat.color}">${cat.icon}</span>
-      <div style="flex:1;min-width:0">
-        <div class="entry-cat mono" style="color:${cat.color}">${cat.label}</div>
-        <div class="entry-time mono">${formatDate(e.ts)} · ${formatTime(e.ts)}</div>
-        <div class="entry-note">${e.note}</div>
-        ${scores}
+    <div class="entry-card" style="flex-direction:column;align-items:stretch;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span class="entry-icon" style="color:${cat.color}">${cat.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div class="entry-cat mono" style="color:${cat.color}">${cat.label}</div>
+          <div class="entry-time mono">${formatDate(e.ts)} · ${formatTime(e.ts)}</div>
+          <div class="entry-note">${e.note}</div>
+          ${scores}
+          ${rateBtn}
+        </div>
+        ${showDelete ? `<button class="delete-btn" onclick="deleteEntry(${e.id})">×</button>` : ""}
       </div>
-      ${showDelete ? `<button class="delete-btn" onclick="deleteEntry(${e.id})">×</button>` : ""}
     </div>
   `;
+}
+
+const entryScoreTemp = {};
+function toggleEntryScorePanel(id) {
+  const panel = document.getElementById("entry-score-panel-" + id);
+  if (panel) panel.style.display = panel.style.display === "none" ? "block" : "none";
+}
+function setEntryScore(entryId, metric, val) {
+  if (!entryScoreTemp[entryId]) {
+    const e = entries.find(e => String(e.id) === String(entryId));
+    entryScoreTemp[entryId] = e && e.scores ? { ...e.scores } : {};
+  }
+  entryScoreTemp[entryId][metric] = val;
+  METRICS.forEach(m => {
+    [1,2,3,4,5].forEach(v => {
+      const btn = document.getElementById(`entry-score-${entryId}-${m.replace(/ /g,'_')}-${v}`);
+      if (btn) {
+        const sel = m === metric && v === val;
+        btn.style.background = sel ? "#7ABF3A" : "white";
+        btn.style.color = sel ? "white" : "#111";
+        btn.style.borderColor = sel ? "#7ABF3A" : "rgba(0,0,0,0.12)";
+      }
+    });
+  });
+}
+function saveEntryScores(entryId) {
+  const e = entries.find(e => String(e.id) === String(entryId));
+  if (e && entryScoreTemp[entryId]) {
+    e.scores = { ...entryScoreTemp[entryId] };
+    delete entryScoreTemp[entryId];
+    saveEntries();
+    renderHistory();
+    updateUI();
+  }
 }
 
 function renderHistory() {
@@ -1649,7 +1711,7 @@ async function stravaLoadActivities() {
   document.getElementById("strava-loading").style.display = "none";
 }
 
-function renderStravaActivities(activities, newCount) {
+function renderStravaActivities(activities, newCount, openScoreActivityId, openScoreEntryId) {
   const el = document.getElementById("strava-activities");
   if (!activities.length) { el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:12px;color:#777;padding:8px 0;">No activities found.</div>'; return; }
 
@@ -1668,19 +1730,75 @@ function renderStravaActivities(activities, newCount) {
     const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed) : "";
     const icon = typeIcon[a.type] || "⚡";
     const stats = [dist, duration, pace, hr, maxHr, elev].filter(Boolean).join(" · ");
-    return `<div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;color:#111;font-weight:600;margin-bottom:2px;">${icon} ${a.name}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:3px;">${date}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">${stats}</div>
+    const showPanel = openScoreActivityId === a.id;
+    const scorePanel = showPanel ? `
+      <div id="strava-score-panel-${a.id}" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.08);">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this experience</div>
+        ${METRICS.map(m => `
+          <div style="margin-bottom:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}</div>
+            <div style="display:flex;gap:4px;">
+              ${[1,2,3,4,5].map(v => `
+                <button id="strava-score-${a.id}-${m.replace(/ /g,'_')}-${v}"
+                  onclick="setStravaScore(${a.id},'${m}',${v})"
+                  style="flex:1;padding:6px 0;border:1px solid rgba(0,0,0,0.12);border-radius:4px;background:white;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;">${v}</button>
+              `).join("")}
+            </div>
+          </div>
+        `).join("")}
+        <button onclick="saveStravaScores(${a.id},${openScoreEntryId})"
+          style="width:100%;margin-top:4px;padding:9px;background:#7ABF3A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">
+          Save Scores
+        </button>
+        <button onclick="saveStravaScores(${a.id},${openScoreEntryId},true)"
+          style="width:100%;margin-top:6px;padding:7px;background:none;border:1px solid rgba(0,0,0,0.12);border-radius:6px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;">
+          Skip — Rate Later
+        </button>
+      </div>` : "";
+
+    return `<div style="background:${showPanel ? 'rgba(122,191,58,0.05)' : 'rgba(0,0,0,0.03)'};border:1px solid ${showPanel ? '#7ABF3A' : 'rgba(0,0,0,0.08)'};border-radius:6px;padding:10px 12px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;color:#111;font-weight:600;margin-bottom:2px;">${icon} ${a.name}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:3px;">${date}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">${stats}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+          ${!showPanel ? `<button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>` : ""}
+          <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-        <button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>
-        <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
-      </div>
+      ${scorePanel}
     </div>`;
   }).join("");
   el.innerHTML = header + cards;
+}
+
+// Track strava scores being set inline
+const stravaScoreTemp = {};
+function setStravaScore(activityId, metric, val) {
+  if (!stravaScoreTemp[activityId]) stravaScoreTemp[activityId] = {};
+  stravaScoreTemp[activityId][metric] = val;
+  // Highlight selected button
+  METRICS.forEach(m => {
+    [1,2,3,4,5].forEach(v => {
+      const btn = document.getElementById(`strava-score-${activityId}-${m.replace(/ /g,'_')}-${v}`);
+      if (btn) btn.style.background = (m === metric && v === val) ? "#7ABF3A" : "white";
+      if (btn) btn.style.color = (m === metric && v === val) ? "white" : "#111";
+      if (btn) btn.style.borderColor = (m === metric && v === val) ? "#7ABF3A" : "rgba(0,0,0,0.12)";
+    });
+  });
+}
+function saveStravaScores(activityId, entryId, skip) {
+  if (!skip) {
+    const scores = stravaScoreTemp[activityId] || {};
+    const entry = entries.find(e => e.id === entryId);
+    if (entry) { entry.scores = scores; saveEntries(); }
+    delete stravaScoreTemp[activityId];
+  }
+  // Re-render without open panel
+  const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+  renderStravaActivities(cached, 0);
 }
 
 function stravaDeleteActivity(activityId) {
@@ -1709,26 +1827,22 @@ function stravaImportAsFocalEvent(activityId) {
   const elev = a.total_elevation_gain ? Math.round(a.total_elevation_gain)+"m elevation gain" : "";
   const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed)+" pace" : "";
   const note = [a.name, a.type, dist, duration, pace, hr, maxHr, elev].filter(Boolean).join(" · ");
-  // Use start_date (UTC) for accurate timestamp
   const activityTs = a.start_date ? new Date(a.start_date).getTime() : new Date(a.start_date_local).getTime();
-  entries.unshift({ id: Date.now(), ts: activityTs, category: "exercise", note, scores: {} });
+
+  // Save entry with empty scores first
+  const entryId = Date.now();
+  entries.unshift({ id: entryId, ts: activityTs, category: "exercise", note, scores: {} });
   saveEntries();
-  currentCategory = "exercise";
-  buildCatGrid();
-  document.getElementById("scoresCard").style.display = "block";
-  document.getElementById("stravaSection").style.display = "block";
-  document.getElementById("manualEntryLabel").style.display = "block";
-  document.getElementById("manualEntryLabelText").textContent = "Manual Entry";
-  document.getElementById("manualEntryLabelText").style.background = "#FC4C02";
-  const border = document.getElementById("manualEntryBorder");
-  border.style.border = "2px solid #3A9A9A";
-  border.style.borderRadius = "8px";
-  border.style.padding = "16px 14px 14px";
-  buildScoreRows();
-  document.getElementById("transcriptText").value = note;
-  transcript = note;
+
+  // Show inline score panel on the activity card
+  const cardScores = {};
+  const cardEl = document.getElementById("strava-score-panel-" + activityId);
+  if (cardEl) { cardEl.style.display = "block"; return; }
+
+  // Re-render activities with score panel open for this one
+  const allCached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+  renderStravaActivities(allCached, 0, activityId, entryId);
   updateUI();
-  updateSaveBtn();
 }
 
 // Handle OAuth callback code in URL

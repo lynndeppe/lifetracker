@@ -956,6 +956,27 @@ function deleteSupplement(id) {
   supplements = supplements.filter(s => s.id !== id);
   saveSupplements();
 }
+function calcSuppTotal(qty, dose) {
+  const q = parseFloat(qty) || 1;
+  if (!dose || !dose.trim()) return "—";
+  // Extract number and unit from dose string e.g. "500mg", "1.5g", "250 mcg"
+  const match = dose.trim().match(/^([0-9]+\.?[0-9]*)\s*([a-zA-Zµμ%]*)/);
+  if (!match) return q > 1 ? q + "×" + dose : dose;
+  const num = parseFloat(match[1]);
+  const unit = match[2] || "";
+  if (isNaN(num)) return q > 1 ? q + "×" + dose : dose;
+  const total = Math.round((num * q) * 1000) / 1000;
+  return total + unit;
+}
+function updateSuppTotal(id) {
+  const qtyEl  = document.getElementById("suppQty_"     + id);
+  const doseEl = document.getElementById("suppDoseLog_" + id);
+  const totalEl = document.getElementById("suppTotal_"  + id);
+  if (!totalEl) return;
+  const qty  = qtyEl  ? qtyEl.value  : "1";
+  const dose = doseEl ? doseEl.value : "";
+  totalEl.textContent = calcSuppTotal(qty, dose);
+}
 function saveSuppField(id, field, value) {
   const s = supplements.find(s => String(s.id) === String(id));
   if (!s) return;
@@ -1007,9 +1028,10 @@ function logCheckedSupplements() {
     const qty  = s.qty  || "1";
     const desc = s.desc || "";
     const dose = s.dose || "";
+    const total = calcSuppTotal(qty, dose);
     let note = `${s.name}`;
     if (qty && qty !== "1") note += ` × ${qty}`;
-    if (dose) note += ` — ${dose}`;
+    if (dose) note += ` — ${total}`;
     if (desc) note += `. ${desc}`;
     entries.unshift({ id: Date.now(), ts: Date.now(), category: "supplement", note });
   });
@@ -1054,7 +1076,8 @@ function renderSuppQuickLog() {
             <div style="display:flex;flex-direction:column;gap:2px;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Qty</span>
               <input id="suppQty_${s.id}" type="text" maxlength="2" value="${s.qty || "1"}"
-                onblur="saveSuppField(${s.id},'qty',this.value)"
+                onblur="saveSuppField(${s.id},'qty',this.value);updateSuppTotal(${s.id})"
+                oninput="updateSuppTotal(${s.id})"
                 style="${inputStyle}width:32px;text-align:center;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
@@ -1064,11 +1087,17 @@ function renderSuppQuickLog() {
                 style="${inputStyle}width:100%;box-sizing:border-box;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;">
-              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Dose</span>
-              <input id="suppDoseLog_${s.id}" type="text" maxlength="7" value="${s.dose || ""}"
-                placeholder="e.g. 400mg"
-                onblur="saveSuppField(${s.id},'dose',this.value)"
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Serv Size</span>
+              <input id="suppDoseLog_${s.id}" type="text" maxlength="8" value="${s.dose || ""}"
+                placeholder="e.g. 500mg"
+                onblur="saveSuppField(${s.id},'dose',this.value);updateSuppTotal(${s.id})"
                 style="${inputStyle}width:68px;" />
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;letter-spacing:1px;text-transform:uppercase;">Total</span>
+              <div id="suppTotal_${s.id}" style="padding:6px 8px;border:1px solid rgba(58,154,154,0.3);border-radius:4px;background:rgba(58,154,154,0.06);font-size:12px;font-family:'DM Mono',monospace;color:#3A9A9A;min-width:52px;text-align:center;">
+                ${calcSuppTotal(s.qty, s.dose)}
+              </div>
             </div>
           </div>
 
@@ -1687,11 +1716,12 @@ function buildSuppReportLines() {
     ""
   ];
   sorted.forEach(s => {
-    const dose = s.dose ? s.dose : "—";
-    const qty = s.qty && s.qty !== "1" ? " x" + s.qty : "";
+    const servSize = s.dose ? s.dose : "—";
+    const qty = s.qty && s.qty !== "1" ? s.qty : "1";
+    const total = calcSuppTotal(qty, s.dose);
     const daily = s.includeDaily ? "  [Daily]" : "";
     lines.push(s.name.toUpperCase());
-    lines.push("  Dose: " + dose + qty + daily);
+    lines.push("  Serving Size: " + servSize + "  |  Qty: " + qty + "  |  Total: " + total + daily);
     lines.push("  Intended Purpose: " + (s.desc || "—"));
     if (s.ingredients && s.ingredients.length) {
       lines.push("  Ingredients:");

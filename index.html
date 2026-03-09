@@ -478,6 +478,51 @@
       <div id="rangesSaved" style="display:none;text-align:center;margin-top:8px;font-family:'DM Mono',monospace;font-size:11px;color:#5A8F4A;">&#10003; Saved</div>
     </div>
 
+    <!-- Pre-Event Analysis Window -->
+    <div style="margin-top:28px;">
+      <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
+        <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Pattern Discovery Window</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Number of days before a focal event to include in the analysis.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-family:'DM Mono',monospace;font-size:11px;color:#444;text-transform:uppercase;letter-spacing:1px;">Look-back Days</span>
+          <span style="font-family:'DM Mono',monospace;font-size:16px;color:#111;font-weight:700;" id="sliderLabel">3 days</span>
+        </div>
+        <input type="range" id="lookbackSlider" min="1" max="7" value="3"
+          oninput="document.getElementById('sliderLabel').textContent=this.value+' day'+(this.value==1?'':'s')"
+          style="width:100%;accent-color:#3A9A9A;height:4px;">
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">1 day</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">7 days</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Logs to be Analyzed -->
+    <div style="margin-top:28px;">
+      <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
+        <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Category Logs to be Analyzed</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Select which behavioral categories to include in Pattern Discovery.</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="chk-sleep" checked style="width:18px;height:18px;accent-color:#7C9CBF;" />
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#7C9CBF;">Sleep &amp; Recovery</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="chk-food" checked style="width:18px;height:18px;accent-color:#8BAF7C;" />
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#8BAF7C;">Food &amp; Nutrition</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="chk-stress" checked style="width:18px;height:18px;accent-color:#BF9C7C;" />
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#BF9C7C;">Stress &amp; Mental</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="chk-substance" checked style="width:18px;height:18px;accent-color:#BF7C9C;" />
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#BF7C9C;">Add-Ons</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <!-- Data Management -->
     <div style="margin-top:28px;">
       <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
@@ -512,49 +557,11 @@
 <div class="content" id="tab-analyze" style="display:none">
   <p class="analyze-intro">Identify patterns in the days leading up to a selected Focal Event across the behavioral categories you choose.</p>
 
-  <!-- Change 9: Pre-event Analysis Window, days 1-7, default 3 -->
-  <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:12px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <span style="font-family:'DM Mono',monospace;font-size:11px;color:#444;text-transform:uppercase;letter-spacing:1px;">Pre-Event Analysis Window</span>
-      <span style="font-family:'DM Mono',monospace;font-size:14px;color:#111;font-weight:500;" id="sliderLabel">3 days</span>
-    </div>
-    <input type="range" id="lookbackSlider" min="1" max="7" value="3"
-      oninput="document.getElementById('sliderLabel').textContent=this.value+' day'+(this.value==1?'':'s')"
-      style="width:100%;accent-color:#7A5500;height:4px;">
-    <div style="display:flex;justify-content:space-between;margin-top:4px;">
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:#555;">1 day</span>
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:#555;">7 days</span>
-    </div>
-  </div>
-
-  <!-- Change 10: Focal Event picker -->
+  <!-- Focal Event picker -->
   <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:12px;">
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:12px;">Select Focal Event</div>
     <div id="focalEventList">
       <div style="font-family:'DM Mono',monospace;font-size:12px;color:#777;">No Focal Events logged yet.</div>
-    </div>
-  </div>
-
-  <!-- Change 11: Category checkboxes -->
-  <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#444;text-transform:uppercase;margin-bottom:12px;">Include Behavioral Categories</div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-        <input type="checkbox" id="chk-sleep" checked style="width:18px;height:18px;accent-color:#7C9CBF;" />
-        <span style="font-family:'DM Mono',monospace;font-size:12px;color:#7C9CBF;">Sleep &amp; Recovery</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-        <input type="checkbox" id="chk-food" checked style="width:18px;height:18px;accent-color:#8BAF7C;" />
-        <span style="font-family:'DM Mono',monospace;font-size:12px;color:#8BAF7C;">Food &amp; Nutrition</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-        <input type="checkbox" id="chk-stress" checked style="width:18px;height:18px;accent-color:#BF9C7C;" />
-        <span style="font-family:'DM Mono',monospace;font-size:12px;color:#BF9C7C;">Stress &amp; Mental</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-        <input type="checkbox" id="chk-substance" checked style="width:18px;height:18px;accent-color:#BF7C9C;" />
-        <span style="font-family:'DM Mono',monospace;font-size:12px;color:#BF7C9C;">Add-Ons</span>
-      </label>
     </div>
   </div>
 

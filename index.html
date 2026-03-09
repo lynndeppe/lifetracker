@@ -1878,8 +1878,20 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
         messages: [{ role: "user", content: prompt }]
       })
     });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || "No response received.";
+    const raw = await res.text();
+    console.log("Ingredient report raw response:", raw);
+    let data;
+    try { data = JSON.parse(raw); } catch(pe) {
+      body.textContent = "Parse error: " + raw.slice(0, 300);
+      output.style.display = "block";
+      btn.textContent = "Regenerate with AI";
+      btn.disabled = false; btn.style.background = "#3A9A9A";
+      return;
+    }
+    console.log("Ingredient report parsed:", JSON.stringify(data).slice(0, 500));
+    const text = data?.content?.[0]?.text
+               || data?.error?.message
+               || JSON.stringify(data).slice(0, 400);
     body.textContent = text;
     output.style.display = "block";
     btn.textContent = "Regenerate with AI";

@@ -555,15 +555,27 @@
   <!-- REPORTS sub-tab -->
   <div id="foundation-reports" style="display:none;">
 
-    <!-- Supplement List Report -->
+    <!-- Report 1: Supplement List -->
     <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
-      <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Supplement List</div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">All saved supplements in alphabetical order with daily dose. Download as a text file to share with your doctor or trainer.</div>
-      <div id="suppReportPreview" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;margin-bottom:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;min-height:60px;"></div>
-      <button onclick="downloadSuppReport()"
-        style="width:100%;padding:11px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">
-        &#8595; Download Report
-      </button>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="font-family:'DM Mono',monospace;font-size:22px;color:#3A9A9A;font-weight:700;line-height:1;margin-top:2px;">1.</div>
+        <div style="flex:1;">
+          <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Supplement Review List</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:12px;">All saved supplements in alphabetical order with daily dose — share with your doctor or trainer.</div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="toggleSuppReportPreview()"
+              style="flex:1;padding:9px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="suppReportViewBtn">
+              View Report
+            </button>
+            <button onclick="downloadSuppReport()"
+              style="padding:9px 14px;background:none;border:1px solid #3A9A9A;color:#3A9A9A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">
+              &#8595; Download
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Preview — hidden by default -->
+      <div id="suppReportPreview" style="display:none;margin-top:14px;background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;"></div>
     </div>
 
   </div><!-- end foundation-reports -->
@@ -1675,10 +1687,25 @@ function buildSuppReportLines() {
   return lines;
 }
 function renderSuppReport() {
+  // Just ensure preview is hidden when tab opens
   const el = document.getElementById("suppReportPreview");
+  if (el) el.style.display = "none";
+  const btn = document.getElementById("suppReportViewBtn");
+  if (btn) btn.textContent = "View Report";
+}
+function toggleSuppReportPreview() {
+  const el = document.getElementById("suppReportPreview");
+  const btn = document.getElementById("suppReportViewBtn");
   if (!el) return;
-  const lines = buildSuppReportLines();
-  el.innerHTML = lines.map(l => `<div>${l || "&nbsp;"}</div>`).join("");
+  if (el.style.display === "none") {
+    const lines = buildSuppReportLines();
+    el.innerHTML = lines.map(l => `<div>${l || "&nbsp;"}</div>`).join("");
+    el.style.display = "block";
+    if (btn) btn.textContent = "Hide Report";
+  } else {
+    el.style.display = "none";
+    if (btn) btn.textContent = "View Report";
+  }
 }
 function downloadSuppReport() {
   const lines = buildSuppReportLines();

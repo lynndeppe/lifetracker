@@ -957,7 +957,7 @@ function deleteSupplement(id) {
   saveSupplements();
 }
 function saveSuppField(id, field, value) {
-  const s = supplements.find(s => s.id === id);
+  const s = supplements.find(s => String(s.id) === String(id));
   if (!s) return;
   s[field] = value.trim();
   localStorage.setItem("bl_supplements", JSON.stringify(supplements));
@@ -993,10 +993,20 @@ function logCheckedSupplements() {
     return cb && cb.checked;
   });
   if (!checked.length) return;
+  // Persist any unsaved field edits before logging
+  supplements.forEach(s => {
+    const qty  = document.getElementById("suppQty_"     + s.id)?.value.trim();
+    const desc = document.getElementById("suppDesc_"    + s.id)?.value.trim();
+    const dose = document.getElementById("suppDoseLog_" + s.id)?.value.trim();
+    if (qty  !== undefined) s.qty  = qty;
+    if (desc !== undefined) s.desc = desc;
+    if (dose !== undefined) s.dose = dose;
+  });
+  localStorage.setItem("bl_supplements", JSON.stringify(supplements));
   checked.forEach(s => {
-    const qty  = (document.getElementById("suppQty_"  + s.id)?.value.trim()) || "1";
-    const desc = (document.getElementById("suppDesc_" + s.id)?.value.trim()) || "";
-    const dose = (document.getElementById("suppDoseLog_" + s.id)?.value.trim()) || s.dose || "";
+    const qty  = s.qty  || "1";
+    const desc = s.desc || "";
+    const dose = s.dose || "";
     let note = `${s.name}`;
     if (qty && qty !== "1") note += ` × ${qty}`;
     if (dose) note += ` — ${dose}`;
@@ -1048,7 +1058,7 @@ function renderSuppQuickLog() {
                 style="${inputStyle}width:32px;text-align:center;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
-              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Description</span>
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Intended Purpose</span>
               <input id="suppDesc_${s.id}" type="text" placeholder="optional note" value="${s.desc || ""}"
                 onblur="saveSuppField(${s.id},'desc',this.value)"
                 style="${inputStyle}width:100%;box-sizing:border-box;" />
@@ -1682,7 +1692,7 @@ function buildSuppReportLines() {
     const daily = s.includeDaily ? "  [Daily]" : "";
     lines.push(s.name.toUpperCase());
     lines.push("  Dose: " + dose + qty + daily);
-    if (s.desc) lines.push("  Note: " + s.desc);
+    lines.push("  Intended Purpose: " + (s.desc || "—"));
     if (s.ingredients && s.ingredients.length) {
       lines.push("  Ingredients:");
       s.ingredients.forEach(i => {

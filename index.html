@@ -578,6 +578,28 @@
       <div id="suppReportPreview" style="display:none;margin-top:14px;background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;"></div>
     </div>
 
+    <!-- Report 2: Ingredient Analysis -->
+    <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="font-family:'DM Mono',monospace;font-size:22px;color:#3A9A9A;font-weight:700;line-height:1;margin-top:2px;">2.</div>
+        <div style="flex:1;">
+          <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Ingredient Analysis</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:12px;">Groups all ingredients across your supplements, combines duplicates, and provides science-based recommended adult doses for each.</div>
+          <button onclick="generateIngredientReport()"
+            style="width:100%;padding:9px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="ingReportBtn">
+            Generate with AI
+          </button>
+        </div>
+      </div>
+      <div id="ingReportOutput" style="display:none;margin-top:14px;">
+        <div id="ingReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;white-space:pre-wrap;"></div>
+        <button onclick="downloadIngredientReport()"
+          style="width:100%;margin-top:10px;padding:9px;background:none;border:1px solid #3A9A9A;color:#3A9A9A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">
+          &#8595; Download Report
+        </button>
+      </div>
+    </div>
+
   </div><!-- end foundation-reports -->
 
 </div><!-- end tab-foundation -->
@@ -1790,6 +1812,103 @@ function downloadSuppReport() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+async function generateIngredientReport() {
+  if (!supplements.length) { showToast("No supplements saved yet."); return; }
+
+  // Build grouped ingredient map: name (lowercase) -> { sources: [], totalAmounts: [], rawAmounts: [] }
+  const ingMap = {};
+  supplements.forEach(s => {
+    if (!s.ingredients || !s.ingredients.length) return;
+    const ratio = calcServingRatio(s.qty || "1", s.dose || "1");
+    s.ingredients.forEach(i => {
+      const key = i.ingredient.toLowerCase().trim();
+      if (!ingMap[key]) ingMap[key] = { displayName: i.ingredient, entries: [] };
+      const scaled = scaleIngredientAmount(i.amount, ratio);
+      ingMap[key].entries.push({ supp: s.name, labelAmount: i.amount, scaledAmount: scaled });
+    });
+  });
+
+  if (!Object.keys(ingMap).length) { showToast("No scanned ingredients found. Scan supplement labels first."); return; }
+
+  // Build prompt data
+  const ingLines = Object.values(ingMap).map(ing => {
+    const sources = ing.entries.map(e => `${e.supp} (label: ${e.labelAmount || "?"}, you take: ${e.scaledAmount || "?"})`).join("; ");
+    return `- ${ing.displayName}: ${sources}`;
+  }).join("\n");
+
+  const prompt = `You are a sports nutrition and health scientist. I have listed all the ingredients from my supplement stack below, with the amounts I personally consume per session.
+
+YOUR TASK:
+1. Group these ingredients by category (e.g. Vitamins, Minerals, Amino Acids, Adaptogens, Fatty Acids, Probiotics, Herbal Extracts, etc.)
+2. For each ingredient list:
+   - The amount I take (from the data below)
+   - The science-based recommended daily dose range for healthy adults (cite general research consensus)
+   - A brief note on primary function/benefit
+   - A status: WITHIN RANGE / BELOW RANGE / ABOVE RANGE / UNKNOWN (if no clear RDA exists)
+3. After all groups, add a SHORT SUMMARY section noting any notable gaps, redundancies, or cautions.
+
+Format each ingredient like this:
+  INGREDIENT NAME
+    I take: [amount]
+    Rec. dose: [range]
+    Function: [brief]
+    Status: [status]
+
+MY INGREDIENTS:
+${ingLines}
+
+Be factual, concise, and science-based. Do not recommend purchasing anything.`;
+
+  const btn = document.getElementById("ingReportBtn");
+  const output = document.getElementById("ingReportOutput");
+  const body = document.getElementById("ingReportBody");
+  btn.textContent = "Generating…";
+  btn.disabled = true;
+  btn.style.background = "#777";
+  output.style.display = "none";
+
+  try {
+    const res = await fetch(WORKER + "?service=claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-opus-4-5",
+        max_tokens: 4000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "No response received.";
+    body.textContent = text;
+    output.style.display = "block";
+    btn.textContent = "Regenerate with AI";
+  } catch(e) {
+    showToast("Error generating report: " + e.message);
+    btn.textContent = "Generate with AI";
+  }
+  btn.disabled = false;
+  btn.style.background = "#3A9A9A";
+}
+
+function downloadIngredientReport() {
+  const body = document.getElementById("ingReportBody");
+  if (!body || !body.textContent.trim()) return;
+  const header = [
+    "MY BIO PERFORMANCE — INGREDIENT ANALYSIS",
+    "Generated: " + new Date().toLocaleDateString([], { weekday:"long", year:"numeric", month:"long", day:"numeric" }),
+    "─".repeat(44),
+    ""
+  ].join("\n");
+  const blob = new Blob([header + body.textContent], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ingredient-analysis-" + new Date().toISOString().slice(0,10) + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 
 // ── Strava ────────────────────────────────────────────────────────
 const WORKER = "https://green-dawn-cf6c.lynndeppe.workers.dev/";

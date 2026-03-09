@@ -956,6 +956,12 @@ function deleteSupplement(id) {
   supplements = supplements.filter(s => s.id !== id);
   saveSupplements();
 }
+function saveSuppField(id, field, value) {
+  const s = supplements.find(s => s.id === id);
+  if (!s) return;
+  s[field] = value.trim();
+  localStorage.setItem("bl_supplements", JSON.stringify(supplements));
+}
 function toggleDailySupp(id) {
   const s = supplements.find(s => s.id === id);
   if (!s) return;
@@ -1038,17 +1044,20 @@ function renderSuppQuickLog() {
             <div style="display:flex;flex-direction:column;gap:2px;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Qty</span>
               <input id="suppQty_${s.id}" type="text" maxlength="2" value="${s.qty || "1"}"
+                onblur="saveSuppField(${s.id},'qty',this.value)"
                 style="${inputStyle}width:32px;text-align:center;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Description</span>
               <input id="suppDesc_${s.id}" type="text" placeholder="optional note" value="${s.desc || ""}"
+                onblur="saveSuppField(${s.id},'desc',this.value)"
                 style="${inputStyle}width:100%;box-sizing:border-box;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Dose</span>
               <input id="suppDoseLog_${s.id}" type="text" maxlength="7" value="${s.dose || ""}"
                 placeholder="e.g. 400mg"
+                onblur="saveSuppField(${s.id},'dose',this.value)"
                 style="${inputStyle}width:68px;" />
             </div>
           </div>

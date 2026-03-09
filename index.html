@@ -342,6 +342,7 @@
   <div class="sub-tabs">
     <button class="sub-tab active" id="subtab-supplements" onclick="showSubTab('supplements')">Supplements</button>
     <button class="sub-tab" id="subtab-setup" onclick="showSubTab('setup')">Set-Up</button>
+    <button class="sub-tab" id="subtab-reports" onclick="showSubTab('reports')">Reports</button>
   </div>
 
   <!-- SUPPLEMENTS sub-tab -->
@@ -551,6 +552,22 @@
 
   </div><!-- end foundation-setup -->
 
+  <!-- REPORTS sub-tab -->
+  <div id="foundation-reports" style="display:none;">
+
+    <!-- Supplement List Report -->
+    <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Supplement List</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">All saved supplements in alphabetical order with daily dose. Download as a text file to share with your doctor or trainer.</div>
+      <div id="suppReportPreview" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;margin-bottom:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;min-height:60px;"></div>
+      <button onclick="downloadSuppReport()"
+        style="width:100%;padding:11px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">
+        &#8595; Download Report
+      </button>
+    </div>
+
+  </div><!-- end foundation-reports -->
+
 </div><!-- end tab-foundation -->
 
 <!-- ANALYZE TAB -->
@@ -615,14 +632,17 @@ function saveSupplements() {
 function showSubTab(name) {
   document.getElementById("foundation-supplements").style.display = name === "supplements" ? "block" : "none";
   document.getElementById("foundation-setup").style.display = name === "setup" ? "block" : "none";
+  document.getElementById("foundation-reports").style.display = name === "reports" ? "block" : "none";
   document.getElementById("subtab-supplements").classList.toggle("active", name === "supplements");
   document.getElementById("subtab-setup").classList.toggle("active", name === "setup");
+  document.getElementById("subtab-reports").classList.toggle("active", name === "reports");
   if (name === "setup") setTimeout(() => {
     if(window.initRangeBar) window.initRangeBar();
     const last = localStorage.getItem("bl_last_backup");
     const label = document.getElementById("lastBackupLabel");
     if (label) label.textContent = last ? "Last backup: " + last : "No backup yet";
   }, 50);
+  if (name === "reports") renderSuppReport();
 }
 
 // Experience range drag bar
@@ -1623,6 +1643,53 @@ function restoreData(event) {
     }
   };
   reader.readAsText(file);
+}
+
+// ── Reports ───────────────────────────────────────────────────────
+function buildSuppReportLines() {
+  if (!supplements.length) return ["No supplements saved yet."];
+  const sorted = [...supplements].sort((a, b) => a.name.localeCompare(b.name));
+  const lines = [
+    "MY BIO PERFORMANCE — SUPPLEMENT LIST",
+    "Generated: " + new Date().toLocaleDateString([], { weekday:"long", year:"numeric", month:"long", day:"numeric" }),
+    "─".repeat(44),
+    ""
+  ];
+  sorted.forEach(s => {
+    const dose = s.dose ? s.dose : "—";
+    const qty = s.qty && s.qty !== "1" ? " x" + s.qty : "";
+    const daily = s.includeDaily ? "  [Daily]" : "";
+    lines.push(s.name.toUpperCase());
+    lines.push("  Dose: " + dose + qty + daily);
+    if (s.desc) lines.push("  Note: " + s.desc);
+    if (s.ingredients && s.ingredients.length) {
+      lines.push("  Ingredients:");
+      s.ingredients.forEach(i => {
+        lines.push("    · " + i.ingredient + (i.amount ? "  " + i.amount : ""));
+      });
+    }
+    lines.push("");
+  });
+  lines.push("─".repeat(44));
+  lines.push("Total: " + sorted.length + " supplement" + (sorted.length !== 1 ? "s" : ""));
+  return lines;
+}
+function renderSuppReport() {
+  const el = document.getElementById("suppReportPreview");
+  if (!el) return;
+  const lines = buildSuppReportLines();
+  el.innerHTML = lines.map(l => `<div>${l || "&nbsp;"}</div>`).join("");
+}
+function downloadSuppReport() {
+  const lines = buildSuppReportLines();
+  const text = lines.join("\n");
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "supplement-list-" + new Date().toISOString().slice(0,10) + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── Strava ────────────────────────────────────────────────────────

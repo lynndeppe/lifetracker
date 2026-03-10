@@ -231,7 +231,6 @@
 <div class="tabs">
   <div class="tab-row-bottom">
     <button class="tab active mono" onclick="showTab('log')">Log Entries</button>
-    <button class="tab mono" onclick="showTab('history')">Entry History</button>
     <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
   </div>
   <button class="tab tab-patterns mono" onclick="showTab('analyze')" id="tabPatterns">Pattern Discovery</button>
@@ -329,12 +328,6 @@
   </div>
 </div>
 
-<!-- HISTORY TAB -->
-<div class="content" id="tab-history" style="display:none">
-  <div class="header-count mono" id="entryCount" style="margin-bottom:16px;">0 entries logged</div>
-  <div id="historyList"></div>
-</div>
-
 <!-- FOUNDATION TAB -->
 <div class="content" id="tab-foundation" style="display:none">
 
@@ -342,6 +335,7 @@
     <button class="sub-tab active" id="subtab-supplements" onclick="showSubTab('supplements')">Supplements</button>
     <button class="sub-tab" id="subtab-reports" onclick="showSubTab('reports')">Reports</button>
     <button class="sub-tab" id="subtab-setup" onclick="showSubTab('setup')">Set-Up</button>
+    <button class="sub-tab" id="subtab-history" onclick="showSubTab('history')">Entry History</button>
   </div>
 
   <!-- SUPPLEMENTS sub-tab -->
@@ -601,6 +595,12 @@
 
   </div><!-- end foundation-reports -->
 
+  <!-- HISTORY sub-tab -->
+  <div id="foundation-history" style="display:none;">
+    <div class="header-count mono" id="entryCount" style="margin-bottom:16px;">0 entries logged</div>
+    <div id="historyList"></div>
+  </div>
+
 </div><!-- end tab-foundation -->
 
 <!-- ANALYZE TAB -->
@@ -675,9 +675,11 @@ function showSubTab(name) {
   document.getElementById("foundation-supplements").style.display = name === "supplements" ? "block" : "none";
   document.getElementById("foundation-setup").style.display = name === "setup" ? "block" : "none";
   document.getElementById("foundation-reports").style.display = name === "reports" ? "block" : "none";
+  document.getElementById("foundation-history").style.display = name === "history" ? "block" : "none";
   document.getElementById("subtab-supplements").classList.toggle("active", name === "supplements");
   document.getElementById("subtab-setup").classList.toggle("active", name === "setup");
   document.getElementById("subtab-reports").classList.toggle("active", name === "reports");
+  document.getElementById("subtab-history").classList.toggle("active", name === "history");
   if (name === "setup") setTimeout(() => {
     if(window.initRangeBar) window.initRangeBar();
     const last = localStorage.getItem("bl_last_backup");
@@ -685,6 +687,7 @@ function showSubTab(name) {
     if (label) label.textContent = last ? "Last backup: " + last : "No backup yet";
   }, 50);
   if (name === "reports") renderSuppReport();
+  if (name === "history") renderHistory();
 }
 
 // Experience range drag bar
@@ -1191,7 +1194,7 @@ function renderSuppQuickLog() {
 
 // ── Tab switching ─────────────────────────────────────────────────
 function showTab(name) {
-  ["log","analyze","history","foundation"].forEach(t => {
+  ["log","analyze","foundation"].forEach(t => {
     const el = document.getElementById("tab-"+t);
     if (el) el.style.display = t===name?"block":"none";
   });
@@ -1201,7 +1204,6 @@ function showTab(name) {
     const match = fn.match(/showTab\('(\w+)'\)/);
     if (match) btn.classList.toggle("active", match[1] === name);
   });
-  if (name==="history") renderHistory();
   if (name==="foundation") { renderSuppQuickLog(); setTimeout(() => { if(window.initRangeBar) window.initRangeBar(); }, 50); }
   if (name==="analyze") renderFocalEventList();
 }

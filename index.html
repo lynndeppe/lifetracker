@@ -1873,7 +1873,8 @@ async function generateCommonality(focalEvents, daysBack, selectedCats, eventRow
     const catCounts = {};
     eventRows.forEach(row => { row[d].forEach(cat => { catCounts[cat] = (catCounts[cat] || 0) + 1; }); });
     const commonCats = Object.entries(catCounts)
-      .filter(([, count]) => count >= Math.max(2, Math.ceil(focalEvents.length * 0.75)))
+      .filter(([, count]) => count >= Math.max(1, Math.ceil(focalEvents.length * 0.5)))
+      .sort((a, b) => b[1] - a[1])
       .map(([cat]) => cat);
     if (!commonCats.length) continue;
 
@@ -1907,13 +1908,19 @@ async function generateCommonality(focalEvents, daysBack, selectedCats, eventRow
 
 For each day and each category listed, write ONE specific sentence describing what was logged — focus on the actual content (e.g. macros, sleep hours, stress type, substances taken). Be concrete and specific like: "Entries were high-protein meals averaging 40g protein" or "7-8 hours sleep logged across events" or "Caffeine and creatine taken consistently".
 
-Respond ONLY in this exact JSON format, no other text:
+Respond ONLY in this exact JSON format, no other text. Include a separate object for EVERY day provided in the data, even if patterns are weak — do not skip any day:
 [
   {
     "day": "-3d",
     "items": [
       { "category": "food", "description": "High protein meals with consistent carb loading noted" },
       { "category": "sleep", "description": "7-9 hours logged with early bedtimes" }
+    ]
+  },
+  {
+    "day": "-2d",
+    "items": [
+      { "category": "supplement", "description": "Creatine and caffeine taken consistently across events" }
     ]
   }
 ]

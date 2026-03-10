@@ -1736,54 +1736,25 @@ function buildHeatmap(focalEvents, daysBack, selectedCats) {
     html += `</div>`; // row
   });
 
-  // Per-day summary row: dots + commonality text
-  // For each day, find which categories appeared in MORE THAN HALF the events
-  html += `<div style="margin-top:10px;border-top:1px solid rgba(0,0,0,0.08);padding-top:10px;">`;
-  html += `<div style="font-family:'DM Mono',monospace;font-size:8px;color:#999;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Day-by-day commonality</div>`;
-
-  for (let d = 0; d < daysBack; d++) {
-    const dayLabel = `-${daysBack - d}d`;
-    // Count how many events had each category on this day
-    const catCounts = {};
-    eventRows.forEach(row => {
-      row[d].forEach(cat => { catCounts[cat] = (catCounts[cat] || 0) + 1; });
-    });
-    const common = Object.entries(catCounts)
-      .filter(([, count]) => count >= Math.max(2, Math.ceil(focalEvents.length * 0.75)))
-      .sort((a, b) => b[1] - a[1]);
-
-    if (!common.length) continue; // skip days with no commonality
-
-    html += `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;padding:6px 8px;background:rgba(0,0,0,0.03);border-radius:6px;">`;
-    // Day label
-    html += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;font-weight:700;min-width:28px;padding-top:1px;">${dayLabel}</div>`;
-    // Dots
-    html += `<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;flex:1;">`;
-    common.forEach(([cat, count]) => {
-      const color = CAT_COLORS[cat] || "#888";
-      const icon = CATEGORIES[cat]?.icon || "·";
-      const pct = Math.round((count / focalEvents.length) * 100);
-      html += `<div style="display:flex;align-items:center;gap:3px;margin-right:6px;">
-        <div style="width:14px;height:14px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:8px;color:white;flex-shrink:0;">${icon}</div>
-        <span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;">${CATEGORIES[cat]?.label||cat} ${pct}%</span>
-      </div>`;
-    });
-    html += `</div></div>`;
-  }
-  html += `</div>`;
+  // Day-by-day commonality placeholder — filled by AI after analysis
+  html += `<div id="commonalitySection" style="margin-top:10px;border-top:1px solid rgba(0,0,0,0.08);padding-top:10px;">
+    <div style="font-family:'DM Mono',monospace;font-size:8px;color:#999;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Day-by-day commonality</div>
+    <div id="commonalityBody" style="font-family:'DM Mono',monospace;font-size:11px;color:#777;">Generating after analysis...</div>
+  </div>`;
 
   html += `</div></div>`;
 
   // Legend
   document.getElementById("heatmapLegend").innerHTML = selectedCats.map(c =>
     `<div style="display:flex;align-items:center;gap:5px;">
-      <div style="width:10px;height:10px;border-radius:50%;background:${CAT_COLORS[c]||"#888"};flex-shrink:0;">${CATEGORIES[c]?.icon||""}</div>
+      <div style="width:10px;height:10px;border-radius:50%;background:${CAT_COLORS[c]||"#888"};flex-shrink:0;"></div>
       <span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;text-transform:uppercase;">${CATEGORIES[c]?.label||c}</span>
     </div>`
   ).join("");
 
   document.getElementById("heatmapGrid").innerHTML = html;
   document.getElementById("heatmapCard").style.display = "block";
+  return eventRows;
 }
 
 // ── Analysis ──────────────────────────────────────────────────────
@@ -1812,7 +1783,7 @@ async function runAnalysis() {
   document.getElementById("heatmapCard").style.display = "none";
   document.getElementById("analysisError").style.display = "none";
 
-  buildHeatmap(focalEvents, daysBack, selectedCats);
+  const eventRows = buildHeatmap(focalEvents, daysBack, selectedCats);
 
   const eventBlocks = focalEvents.map((focal, idx) => {
     const windowStart = focal.ts - daysBack * 86400000;
@@ -1866,6 +1837,8 @@ ${eventBlocks}`;
       .replace(/\n/g,"<br>");
     document.getElementById("analysisBody").innerHTML = html;
     document.getElementById("analysisCard").style.display = "block";
+    // Fire commonality analysis async (non-blocking)
+    generateCommonality(focalEvents, daysBack, selectedCats, eventRows);
   } catch(err) {
     document.getElementById("analysisError").textContent = "Analysis failed: " + err.message;
     document.getElementById("analysisError").style.display = "block";
@@ -1873,6 +1846,96 @@ ${eventBlocks}`;
   document.getElementById("analyzingMsg").style.display = "none";
   document.getElementById("analyzeBtn").textContent = `Analyze ${m.label} Range Events`;
   updateUI();
+}
+
+async function generateCommonality(focalEvents, daysBack, selectedCats, eventRows) {
+  const el = document.getElementById("commonalityBody");
+  if (!el) return;
+
+  // Build per-day entry content grouped by category, only for days with 75%+ presence
+  const dayBlocks = [];
+  for (let d = 0; d < daysBack; d++) {
+    const dayLabel = `-${daysBack - d}d`;
+    const catCounts = {};
+    eventRows.forEach(row => { row[d].forEach(cat => { catCounts[cat] = (catCounts[cat] || 0) + 1; }); });
+    const commonCats = Object.entries(catCounts)
+      .filter(([, count]) => count >= Math.max(2, Math.ceil(focalEvents.length * 0.75)))
+      .map(([cat]) => cat);
+    if (!commonCats.length) continue;
+
+    // Gather actual entry notes for those categories on that day across all events
+    const catEntries = {};
+    focalEvents.forEach(focal => {
+      const windowStart = focal.ts - daysBack * 86400000;
+      entries.forEach(e => {
+        if (!commonCats.includes(e.category)) return;
+        if (e.ts < windowStart || e.ts >= focal.ts) return;
+        const dayIdx = Math.min(Math.floor((e.ts - windowStart) / 86400000), daysBack - 1);
+        if (dayIdx !== d) return;
+        if (!catEntries[e.category]) catEntries[e.category] = [];
+        catEntries[e.category].push(e.note);
+      });
+    });
+
+    const catLines = commonCats.map(cat => {
+      const notes = catEntries[cat] || [];
+      return `  ${CATEGORIES[cat]?.label || cat}: ${notes.slice(0, 6).join(" | ") || "(logged)"}`;
+    }).join("\n");
+    dayBlocks.push(`DAY ${dayLabel}:\n${catLines}`);
+  }
+
+  if (!dayBlocks.length) {
+    el.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">No days with 75%+ commonality found across selected events.</div>`;
+    return;
+  }
+
+  const prompt = `You are a human performance analyst. Below are behavioral entries grouped by day before focal performance events, showing only behaviors that appeared in 75%+ of events on that day.
+
+For each day and each category listed, write ONE specific sentence describing what was logged — focus on the actual content (e.g. macros, sleep hours, stress type, substances taken). Be concrete and specific like: "Entries were high-protein meals averaging 40g protein" or "7-8 hours sleep logged across events" or "Caffeine and creatine taken consistently".
+
+Respond ONLY in this exact JSON format, no other text:
+[
+  {
+    "day": "-3d",
+    "items": [
+      { "category": "food", "description": "High protein meals with consistent carb loading noted" },
+      { "category": "sleep", "description": "7-9 hours logged with early bedtimes" }
+    ]
+  }
+]
+
+DATA:
+${dayBlocks.join("\n\n")}`;
+
+  try {
+    const resp = await fetch(WORKER + "?service=gemini", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1500 } }),
+    });
+    const data = await resp.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    let out = "";
+    parsed.forEach(dayObj => {
+      out += `<div style="margin-bottom:12px;">`;
+      out += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#3A9A9A;font-weight:700;letter-spacing:1px;margin-bottom:6px;">${dayObj.day}</div>`;
+      (dayObj.items || []).forEach(item => {
+        const cat = item.category?.toLowerCase();
+        const color = CAT_COLORS[cat] || "#888";
+        const icon = CATEGORIES[cat]?.icon || "·";
+        out += `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+          <div style="width:18px;height:18px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:9px;color:white;flex-shrink:0;margin-top:1px;">${icon}</div>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:1.5;">${item.description}</span>
+        </div>`;
+      });
+      out += `</div>`;
+    });
+    el.innerHTML = out;
+  } catch(err) {
+    el.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">Could not generate commonality: ${err.message}</div>`;
+  }
 }
 
 

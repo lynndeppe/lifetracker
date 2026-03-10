@@ -626,10 +626,10 @@
     <div id="heatmapGrid"></div>
   </div>
 
-  <!-- AI Analysis -->
-  <div id="analysisCard" style="display:none" class="analysis-card">
-    <div class="analysis-title mono">Pattern Analysis</div>
-    <div class="analysis-body" id="analysisBody"></div>
+  <!-- Pattern Reasoning — dots + reasoning, no paragraphs -->
+  <div id="analysisCard" style="display:none;margin-top:16px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;margin-bottom:12px;">Pattern Reasoning</div>
+    <div id="analysisBody"></div>
   </div>
 </div>
 
@@ -640,6 +640,7 @@ const CATEGORIES = {
   stress:     { label: "Stress & Mental",   icon: "◎", color: "#BF9C7C" },
   substance:  { label: "Add-Ons",           icon: "◈", color: "#BF7C9C" },
   exercise:   { label: "Focal Events",      icon: "▲", color: "#7CBFBF" },
+  supplement: { label: "Supplement",        icon: "◉", color: "#3A9A9A" },
 };
 const METRICS = ["Strength", "Endurance", "Mental State", "Recovery Feel"];
 
@@ -1659,10 +1660,7 @@ function updateAnalyzeBtn() {
 }
 
 // ── Heatmap ───────────────────────────────────────────────────────
-const CAT_COLORS = {
-  sleep:"#5B8DD9", food:"#E8A838", stress:"#D95B5B",
-  substance:"#9C7CBF", exercise:"#7ABF3A", supplement:"#3A9A9A"
-};
+function catColor(cat) { return CATEGORIES[cat]?.color || "#888"; }
 function hexToRgba(hex, alpha) {
   const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
   return `rgba(${r},${g},${b},${alpha})`;
@@ -1712,17 +1710,18 @@ function buildHeatmap(focalEvents, daysBack, selectedCats) {
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:#aaa;">${scoreLabel}</div>
     </div>`;
 
-    // Day columns — horizontal timeline bar
-    html += `<div style="display:flex;align-items:center;flex:1;">`;
+    // Day columns — horizontal timeline bar with baseline
+    html += `<div style="display:flex;align-items:center;flex:1;position:relative;">`;
+    // Baseline line
+    html += `<div style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,0.08);z-index:0;"></div>`;
     for (let d = 0; d < daysBack; d++) {
       const cats = eventRows[idx][d];
-      // Stack dots vertically inside each day cell
-      html += `<div style="width:${dayW}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:${trackH}px;">`;
+      html += `<div style="width:${dayW}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:${trackH}px;position:relative;z-index:1;border-right:1px dashed rgba(0,0,0,0.05);">`;
       if (cats.length === 0) {
-        html += `<div style="width:6px;height:1px;background:rgba(0,0,0,0.08);border-radius:1px;"></div>`;
+        html += `<div style="width:4px;height:4px;border-radius:50%;background:rgba(0,0,0,0.08);"></div>`;
       } else {
         cats.forEach(cat => {
-          const color = CAT_COLORS[cat] || "#888";
+          const color = catColor(cat);
           const label = CATEGORIES[cat]?.icon || "·";
           html += `<div title="${CATEGORIES[cat]?.label || cat}" style="width:${dotR*2+2}px;height:${dotR*2+2}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:7px;color:white;flex-shrink:0;">${label}</div>`;
         });
@@ -1747,7 +1746,7 @@ function buildHeatmap(focalEvents, daysBack, selectedCats) {
   // Legend
   document.getElementById("heatmapLegend").innerHTML = selectedCats.map(c =>
     `<div style="display:flex;align-items:center;gap:5px;">
-      <div style="width:10px;height:10px;border-radius:50%;background:${CAT_COLORS[c]||"#888"};flex-shrink:0;"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:${catColor(c)};flex-shrink:0;"></div>
       <span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;text-transform:uppercase;">${CATEGORIES[c]?.label||c}</span>
     </div>`
   ).join("");
@@ -1808,33 +1807,48 @@ async function runAnalysis() {
 
 The user wants to understand what behavioral patterns consistently precede their "${m.label}" performance experiences (score range ${b.min+1}–${b.max} out of 20).
 
-I'm providing ${focalEvents.length} of their most recent events in that range. A heatmap has been shown. Find PATTERNS THAT REPEAT ACROSS MULTIPLE EVENTS.
+I'm providing ${focalEvents.length} of their most recent events in that range. Find PATTERNS THAT REPEAT ACROSS MULTIPLE EVENTS.
 
-ANALYZE:
-1. CONSISTENT PATTERNS — behaviors appearing before most/all ${m.label} events
-2. SCORE CORRELATIONS — what behaviors align with higher vs lower scores within this range
-3. TIMING SIGNALS — behaviors at consistent timing (e.g. always 1–2 days before)
-4. CATEGORY INSIGHTS — which behavioral categories show the strongest pre-event signal
-5. ANOMALIES — events that broke the pattern and what differed
-6. TOP 3 ACTIONABLE RECOMMENDATIONS to reliably achieve more ${m.label} experiences
+Respond ONLY in this exact JSON format, no other text, no markdown:
+[
+  { "category": "sleep", "reasoning": "One specific sentence about the sleep pattern found" },
+  { "category": "food", "reasoning": "One specific sentence about the food pattern found" }
+]
 
-Be direct. Reference specific event numbers. Note when data is limited.
+Only include categories where a clear repeating pattern exists. Use category keys exactly: sleep, food, stress, substance, exercise, supplement. Keep each reasoning to one direct, specific sentence referencing the actual data.
 
 ${eventBlocks}`;
 
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 3000 } }),
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1000 } }),
     });
     const data = await resp.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || data?.error?.message || "No analysis returned.";
-    const html = text
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-      .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
-      .replace(/\*(.+?)\*/g,"<em>$1</em>")
-      .replace(/^#{1,3} (.+)$/gm,"<div style='font-family:\"DM Mono\",monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:14px 0 6px;font-weight:700;'>$1</div>")
-      .replace(/\n/g,"<br>");
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+    let clean = raw.replace(/```json|```/g, "").trim();
+    if (!clean.endsWith("]")) {
+      const lastClose = clean.lastIndexOf("}");
+      if (lastClose !== -1) clean = clean.slice(0, lastClose + 1) + "]";
+    }
+    let parsed = [];
+    try { parsed = JSON.parse(clean); } catch(pe) { parsed = []; }
+
+    let html = "";
+    parsed.forEach(item => {
+      const cat = item.category?.toLowerCase();
+      const color = catColor(cat);
+      const icon = CATEGORIES[cat]?.icon || "·";
+      const catLabel = CATEGORIES[cat]?.label || cat;
+      html += `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;padding:8px 10px;background:rgba(0,0,0,0.02);border-radius:6px;border-left:3px solid ${color};">
+        <div style="width:20px;height:20px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:10px;color:white;flex-shrink:0;margin-top:1px;">${icon}</div>
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:${color};text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:3px;">${catLabel}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.5;">${item.reasoning}</div>
+        </div>
+      </div>`;
+    });
+    if (!html) html = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">Not enough data to identify clear patterns yet.</div>`;
     document.getElementById("analysisBody").innerHTML = html;
     document.getElementById("analysisCard").style.display = "block";
     // Fire commonality analysis async (non-blocking)
@@ -1910,12 +1924,22 @@ ${dayBlocks.join("\n\n")}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1500 } }),
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000 } }),
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    const clean = raw.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
+    let clean = raw.replace(/```json|```/g, "").trim();
+    // Repair truncated JSON — find last complete object and close the array
+    if (!clean.endsWith("]")) {
+      const lastClose = clean.lastIndexOf("}");
+      if (lastClose !== -1) clean = clean.slice(0, lastClose + 1) + "]";
+    }
+    let parsed;
+    try { parsed = JSON.parse(clean); }
+    catch(pe) {
+      el.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">Not enough data yet to identify day-by-day patterns.</div>`;
+      return;
+    }
 
     let out = "";
     parsed.forEach(dayObj => {
@@ -1923,7 +1947,7 @@ ${dayBlocks.join("\n\n")}`;
       out += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#3A9A9A;font-weight:700;letter-spacing:1px;margin-bottom:6px;">${dayObj.day}</div>`;
       (dayObj.items || []).forEach(item => {
         const cat = item.category?.toLowerCase();
-        const color = CAT_COLORS[cat] || "#888";
+        const color = catColor(cat);
         const icon = CATEGORIES[cat]?.icon || "·";
         out += `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
           <div style="width:18px;height:18px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:9px;color:white;flex-shrink:0;margin-top:1px;">${icon}</div>

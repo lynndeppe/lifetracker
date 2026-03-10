@@ -54,15 +54,14 @@
   .tab-row-bottom { display: flex; gap: 4px; }
   .tab-row-bottom .tab { flex: 1; text-align: center; }
   .tab {
-    padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px;
+    padding: 13px 16px; border: 1px solid var(--border); border-radius: 4px;
     cursor: pointer; background: #3A9A9A; color: #fff;
-    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px;
+    font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 1px;
     transition: all 0.2s; -webkit-tap-highlight-color: transparent; white-space: nowrap; flex-shrink: 0;
   }
   .tab.active { background: #7ABF3A; color: #fff; border-color: #7ABF3A; }
-  .tab-patterns { width: 100%; text-align: center; background: #3A9A9A !important; color: white !important; border-color: #3A9A9A !important; font-size: 11px !important; letter-spacing: 2px !important; padding: 10px !important; }
+  .tab-patterns { width: 100%; text-align: center; background: #3A9A9A !important; color: white !important; border-color: #3A9A9A !important; font-size: 13px !important; letter-spacing: 2px !important; padding: 14px !important; }
   .tab-patterns.active { background: #7ABF3A !important; border-color: #7ABF3A !important; }
-
   /* Foundation sub-tabs */
   .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
   .sub-tab { padding: 7px 14px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: transparent; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; transition: all 0.2s; -webkit-tap-highlight-color: transparent; text-transform: uppercase; }
@@ -2085,7 +2084,7 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">${stats}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-          ${!showPanel ? `<button onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>` : ""}
+          ${!showPanel ? `<button id="strava-save-${a.id}" onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>` : ""}
           <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
         </div>
       </div>
@@ -2097,17 +2096,18 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
 
 // Track strava scores being set inline
 const stravaScoreTemp = {};
+const stravaImported = new Set();
 function setStravaScore(activityId, metric, val) {
   if (!stravaScoreTemp[activityId]) stravaScoreTemp[activityId] = {};
   stravaScoreTemp[activityId][metric] = val;
-  // Highlight selected button
-  METRICS.forEach(m => {
-    [1,2,3,4,5].forEach(v => {
-      const btn = document.getElementById(`strava-score-${activityId}-${m.replace(/ /g,'_')}-${v}`);
-      if (btn) btn.style.background = (m === metric && v === val) ? "#7ABF3A" : "white";
-      if (btn) btn.style.color = (m === metric && v === val) ? "white" : "#111";
-      if (btn) btn.style.borderColor = (m === metric && v === val) ? "#7ABF3A" : "rgba(0,0,0,0.12)";
-    });
+  // Only update buttons for THIS metric — preserve other metrics' highlights
+  [1,2,3,4,5].forEach(v => {
+    const btn = document.getElementById(`strava-score-${activityId}-${metric.replace(/ /g,'_')}-${v}`);
+    if (!btn) return;
+    const selected = v === val;
+    btn.style.background   = selected ? "#7ABF3A" : "white";
+    btn.style.color        = selected ? "white"   : "#111";
+    btn.style.borderColor  = selected ? "#7ABF3A" : "rgba(0,0,0,0.12)";
   });
 }
 function saveStravaScores(activityId, entryId, skip) {
@@ -2155,10 +2155,9 @@ function stravaImportAsFocalEvent(activityId) {
   entries.unshift({ id: entryId, ts: activityTs, category: "exercise", note, scores: {} });
   saveEntries();
 
-  // Show inline score panel on the activity card
-  const cardScores = {};
-  const cardEl = document.getElementById("strava-score-panel-" + activityId);
-  if (cardEl) { cardEl.style.display = "block"; return; }
+  // Toggle button label to Imported
+  const saveBtn = document.getElementById(`strava-save-${activityId}`);
+  if (saveBtn) saveBtn.textContent = "Imported";
 
   // Re-render activities with score panel open for this one
   const allCached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");

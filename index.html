@@ -619,11 +619,11 @@
   <div id="analyzingMsg" style="display:none" class="analyzing-msg">Analyzing patterns across selected events...</div>
   <div id="analysisError" style="display:none" class="error-banner"></div>
 
-  <!-- Heatmap -->
-  <div id="heatmapCard" style="display:none;margin-top:16px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;overflow-x:auto;">
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;margin-bottom:12px;">Pattern Heatmap</div>
-    <div id="heatmapLegend" style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;"></div>
-    <div id="heatmapGrid" style="overflow-x:auto;"></div>
+  <!-- Timeline -->
+  <div id="heatmapCard" style="display:none;margin-top:16px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;margin-bottom:8px;">Behavior Timeline</div>
+    <div id="heatmapLegend" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;"></div>
+    <div id="heatmapGrid"></div>
   </div>
 
   <!-- AI Analysis -->
@@ -1668,42 +1668,92 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 function buildHeatmap(focalEvents, daysBack, selectedCats) {
-  const matrix = {};
-  selectedCats.forEach(c => { matrix[c] = Array(daysBack).fill(0); });
-  focalEvents.forEach(focal => {
+  // Build per-event, per-day behavior lists
+  // eventRows[i][day] = array of category keys that had entries that day
+  const eventRows = focalEvents.map(focal => {
     const windowStart = focal.ts - daysBack * 86400000;
+    const days = Array.from({ length: daysBack }, () => []);
     entries.forEach(e => {
       if (!selectedCats.includes(e.category)) return;
       if (e.ts < windowStart || e.ts >= focal.ts) return;
       const dayIdx = Math.min(Math.floor((e.ts - windowStart) / 86400000), daysBack - 1);
-      matrix[e.category][dayIdx]++;
+      if (!days[dayIdx].includes(e.category)) days[dayIdx].push(e.category);
     });
+    return days;
   });
-  let maxVal = 1;
-  selectedCats.forEach(c => { maxVal = Math.max(maxVal, ...matrix[c]); });
-  const cellSize = 28, labelW = 90;
-  let html = `<div style="min-width:${labelW + daysBack*(cellSize+2)}px;">`;
-  html += `<div style="display:flex;margin-left:${labelW}px;margin-bottom:4px;">`;
+
+  const trackH = 36;   // height per event row
+  const labelW = 110;  // left label width
+  const dayW   = 38;   // width per day column
+  const dotR   = 5;    // dot radius
+  const totalW = labelW + daysBack * dayW;
+
+  let html = `<div style="overflow-x:auto;"><div style="min-width:${totalW}px;">`;
+
+  // Column headers — day labels (-N … -1)
+  html += `<div style="display:flex;margin-left:${labelW}px;margin-bottom:6px;">`;
   for (let d = 0; d < daysBack; d++) {
-    const lbl = d === 0 ? `-${daysBack}d` : d === daysBack-1 ? "-1d" : (d % Math.ceil(daysBack/5) === 0 ? `-${daysBack-d}d` : "");
-    html += `<div style="width:${cellSize}px;margin-right:2px;font-family:'DM Mono',monospace;font-size:8px;color:#999;text-align:center;">${lbl}</div>`;
+    html += `<div style="width:${dayW}px;font-family:'DM Mono',monospace;font-size:8px;color:#999;text-align:center;">-${daysBack - d}d</div>`;
   }
   html += `</div>`;
-  selectedCats.forEach(c => {
-    const color = CAT_COLORS[c] || "#888";
-    html += `<div style="display:flex;align-items:center;margin-bottom:3px;">`;
-    html += `<div style="width:${labelW}px;font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;padding-right:8px;text-align:right;flex-shrink:0;">${CATEGORIES[c]?.label || c}</div>`;
-    matrix[c].forEach((count, d) => {
-      const intensity = count === 0 ? 0 : 0.15 + 0.85*(count/maxVal);
-      const bg = count === 0 ? "rgba(0,0,0,0.05)" : hexToRgba(color, intensity);
-      html += `<div title="Day -${daysBack-d}: ${count} entr${count===1?"y":"ies"}" style="width:${cellSize}px;height:${cellSize}px;margin-right:2px;border-radius:3px;background:${bg};display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;color:${count>0?"white":"#bbb"};">${count>0?count:""}</div>`;
-    });
-    html += `</div>`;
+
+  // One row per focal event
+  focalEvents.forEach((focal, idx) => {
+    const dt = new Date(focal.ts).toLocaleDateString([], { month:"short", day:"numeric" });
+    const total = getTotalScore(focal);
+    const scoreLabel = total !== null ? `${total}/20` : "";
+    const rowBg = idx % 2 === 0 ? "rgba(0,0,0,0.02)" : "transparent";
+
+    html += `<div style="display:flex;align-items:center;background:${rowBg};border-radius:4px;margin-bottom:2px;">`;
+
+    // Label
+    html += `<div style="width:${labelW}px;flex-shrink:0;padding-right:10px;text-align:right;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;white-space:nowrap;">${dt}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#aaa;">${scoreLabel}</div>
+    </div>`;
+
+    // Day columns — horizontal timeline bar
+    html += `<div style="display:flex;align-items:center;flex:1;">`;
+    for (let d = 0; d < daysBack; d++) {
+      const cats = eventRows[idx][d];
+      // Stack dots vertically inside each day cell
+      html += `<div style="width:${dayW}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:${trackH}px;">`;
+      if (cats.length === 0) {
+        html += `<div style="width:6px;height:1px;background:rgba(0,0,0,0.08);border-radius:1px;"></div>`;
+      } else {
+        cats.forEach(cat => {
+          const color = CAT_COLORS[cat] || "#888";
+          const label = CATEGORIES[cat]?.icon || "·";
+          html += `<div title="${CATEGORIES[cat]?.label || cat}" style="width:${dotR*2+2}px;height:${dotR*2+2}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:7px;color:white;flex-shrink:0;">${label}</div>`;
+        });
+      }
+      html += `</div>`;
+    }
+
+    // Event marker at the end
+    html += `<div style="width:10px;height:10px;border-radius:50%;background:#7ABF3A;border:2px solid white;box-shadow:0 0 0 1px #7ABF3A;flex-shrink:0;" title="Focal event: ${focal.note||''}"></div>`;
+    html += `</div>`; // day columns
+    html += `</div>`; // row
   });
-  html += `<div style="margin-left:${labelW}px;margin-top:6px;font-family:'DM Mono',monospace;font-size:9px;color:#999;text-align:center;">← days before focal event</div></div>`;
+
+  // X-axis footer
+  html += `<div style="display:flex;margin-left:${labelW}px;margin-top:6px;border-top:1px solid rgba(0,0,0,0.06);padding-top:4px;">`;
+  for (let d = 0; d < daysBack; d++) {
+    html += `<div style="width:${dayW}px;font-family:'DM Mono',monospace;font-size:7px;color:#bbb;text-align:center;">${d === daysBack-1 ? "eve" : ""}</div>`;
+  }
+  html += `<div style="font-family:'DM Mono',monospace;font-size:7px;color:#7ABF3A;white-space:nowrap;padding-left:2px;">● event</div>`;
+  html += `</div>`;
+
+  html += `</div></div>`;
+
+  // Legend
   document.getElementById("heatmapLegend").innerHTML = selectedCats.map(c =>
-    `<div style="display:flex;align-items:center;gap:5px;"><div style="width:12px;height:12px;border-radius:2px;background:${CAT_COLORS[c]||"#888"};flex-shrink:0;"></div><span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;text-transform:uppercase;">${CATEGORIES[c]?.label||c}</span></div>`
+    `<div style="display:flex;align-items:center;gap:5px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${CAT_COLORS[c]||"#888"};flex-shrink:0;"></div>
+      <span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;text-transform:uppercase;">${CATEGORIES[c]?.label||c}</span>
+    </div>`
   ).join("");
+
   document.getElementById("heatmapGrid").innerHTML = html;
   document.getElementById("heatmapCard").style.display = "block";
 }

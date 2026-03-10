@@ -1736,12 +1736,40 @@ function buildHeatmap(focalEvents, daysBack, selectedCats) {
     html += `</div>`; // row
   });
 
-  // X-axis footer
-  html += `<div style="display:flex;margin-left:${labelW}px;margin-top:6px;border-top:1px solid rgba(0,0,0,0.06);padding-top:4px;">`;
+  // Per-day summary row: dots + commonality text
+  // For each day, find which categories appeared in MORE THAN HALF the events
+  html += `<div style="margin-top:10px;border-top:1px solid rgba(0,0,0,0.08);padding-top:10px;">`;
+  html += `<div style="font-family:'DM Mono',monospace;font-size:8px;color:#999;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Day-by-day commonality</div>`;
+
   for (let d = 0; d < daysBack; d++) {
-    html += `<div style="width:${dayW}px;font-family:'DM Mono',monospace;font-size:7px;color:#bbb;text-align:center;">${d === daysBack-1 ? "eve" : ""}</div>`;
+    const dayLabel = `-${daysBack - d}d`;
+    // Count how many events had each category on this day
+    const catCounts = {};
+    eventRows.forEach(row => {
+      row[d].forEach(cat => { catCounts[cat] = (catCounts[cat] || 0) + 1; });
+    });
+    const common = Object.entries(catCounts)
+      .filter(([, count]) => count >= Math.max(2, Math.ceil(focalEvents.length * 0.75)))
+      .sort((a, b) => b[1] - a[1]);
+
+    if (!common.length) continue; // skip days with no commonality
+
+    html += `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;padding:6px 8px;background:rgba(0,0,0,0.03);border-radius:6px;">`;
+    // Day label
+    html += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;font-weight:700;min-width:28px;padding-top:1px;">${dayLabel}</div>`;
+    // Dots
+    html += `<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;flex:1;">`;
+    common.forEach(([cat, count]) => {
+      const color = CAT_COLORS[cat] || "#888";
+      const icon = CATEGORIES[cat]?.icon || "·";
+      const pct = Math.round((count / focalEvents.length) * 100);
+      html += `<div style="display:flex;align-items:center;gap:3px;margin-right:6px;">
+        <div style="width:14px;height:14px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:8px;color:white;flex-shrink:0;">${icon}</div>
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;">${CATEGORIES[cat]?.label||cat} ${pct}%</span>
+      </div>`;
+    });
+    html += `</div></div>`;
   }
-  html += `<div style="font-family:'DM Mono',monospace;font-size:7px;color:#7ABF3A;white-space:nowrap;padding-left:2px;">● event</div>`;
   html += `</div>`;
 
   html += `</div></div>`;
@@ -1749,7 +1777,7 @@ function buildHeatmap(focalEvents, daysBack, selectedCats) {
   // Legend
   document.getElementById("heatmapLegend").innerHTML = selectedCats.map(c =>
     `<div style="display:flex;align-items:center;gap:5px;">
-      <div style="width:10px;height:10px;border-radius:50%;background:${CAT_COLORS[c]||"#888"};flex-shrink:0;"></div>
+      <div style="width:10px;height:10px;border-radius:50%;background:${CAT_COLORS[c]||"#888"};flex-shrink:0;">${CATEGORIES[c]?.icon||""}</div>
       <span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;text-transform:uppercase;">${CATEGORIES[c]?.label||c}</span>
     </div>`
   ).join("");

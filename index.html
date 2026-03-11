@@ -596,6 +596,28 @@
       </div>
     </div>
 
+    <!-- Report 3: Food & Nutrition Analysis -->
+    <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="font-family:'DM Mono',monospace;font-size:22px;color:#8BAF7C;font-weight:700;line-height:1;margin-top:2px;">3.</div>
+        <div style="flex:1;">
+          <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Food & Nutrition Analysis</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:12px;">Analyzes your logged food entries against gut health recommendations, triglyceride & sugar best practices, lipid levels, and the updated food pyramid.</div>
+          <button onclick="generateFoodReport()"
+            style="width:100%;padding:9px;background:#8BAF7C;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="foodReportBtn">
+            Perform Analysis
+          </button>
+        </div>
+      </div>
+      <div id="foodReportOutput" style="display:none;margin-top:14px;">
+        <div id="foodReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;"></div>
+        <button onclick="downloadFoodReport()"
+          style="width:100%;margin-top:10px;padding:9px;background:none;border:1px solid #8BAF7C;color:#8BAF7C;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">
+          &#8595; Download Report
+        </button>
+      </div>
+    </div>
+
   </div><!-- end foundation-reports -->
 
   <!-- HISTORY sub-tab -->
@@ -2229,6 +2251,180 @@ function downloadIngredientReport() {
   const a = document.createElement("a");
   a.href = url;
   a.download = "ingredient-analysis-" + new Date().toISOString().slice(0,10) + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function generateFoodReport() {
+  const btn = document.getElementById("foodReportBtn");
+  const output = document.getElementById("foodReportOutput");
+  const body = document.getElementById("foodReportBody");
+
+  const foodEntries = entries.filter(e => e.category === "food");
+  if (!foodEntries.length) {
+    body.innerHTML = `<div style="color:#aaa;font-size:11px;">No food & nutrition entries found. Start logging your meals first.</div>`;
+    output.style.display = "block";
+    return;
+  }
+
+  btn.textContent = "Analyzing...";
+  btn.disabled = true;
+
+  const recent = [...foodEntries].sort((a, b) => b.ts - a.ts).slice(0, 60);
+  const entryLines = recent.map(e => {
+    const d = new Date(e.ts).toLocaleDateString([], { month:"short", day:"numeric" });
+    return `[${d}] ${e.note}`;
+  }).join("\n");
+
+  const prompt = `You are a registered dietitian and functional medicine nutritionist. Analyze these food journal entries and return ONLY valid JSON, no other text or markdown.
+
+Return this exact structure:
+{
+  "score": 72,
+  "scoreLabel": "Good",
+  "categories": [
+    {
+      "id": "gut",
+      "title": "Gut Health",
+      "color": "#7ABF3A",
+      "rating": "MODERATE",
+      "ratingColor": "#E8A838",
+      "observations": ["Observation 1 referencing actual foods", "Observation 2"],
+      "recommendations": ["Specific actionable tip 1", "Specific actionable tip 2"]
+    },
+    {
+      "id": "sugar",
+      "title": "Triglycerides & Sugar",
+      "color": "#E8A838",
+      "rating": "NEEDS WORK",
+      "ratingColor": "#D95B5B",
+      "observations": ["Observation referencing actual logged foods"],
+      "recommendations": ["Tip 1", "Tip 2"]
+    },
+    {
+      "id": "lipids",
+      "title": "Lipid & Heart Health",
+      "color": "#5B8DD9",
+      "rating": "STRONG",
+      "ratingColor": "#7ABF3A",
+      "observations": ["Observation"],
+      "recommendations": ["Tip 1", "Tip 2"]
+    },
+    {
+      "id": "pyramid",
+      "title": "Food Pyramid Alignment",
+      "color": "#9C7CBF",
+      "rating": "MODERATE",
+      "ratingColor": "#E8A838",
+      "observations": ["Observation"],
+      "recommendations": ["Tip 1", "Tip 2"]
+    }
+  ],
+  "summary": "One paragraph of prioritized next steps based on the data."
+}
+
+Rating values must be exactly: STRONG, MODERATE, or NEEDS WORK.
+ratingColor: STRONG=#7ABF3A, MODERATE=#E8A838, NEEDS WORK=#D95B5B.
+Be specific — reference actual foods logged. Note if data is limited.
+
+FOOD JOURNAL (${recent.length} entries):
+${entryLines}`;
+
+  try {
+    const resp = await fetch(WORKER + "?service=gemini", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000 } }),
+    });
+    const data = await resp.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    let clean = raw.replace(/```json|```/g, "").trim();
+    let report;
+    try { report = JSON.parse(clean); } catch(pe) {
+      body.innerHTML = `<div style="color:#c00;font-size:11px;">Could not parse report. Try again.</div>`;
+      output.style.display = "block";
+      btn.textContent = "Perform Analysis"; btn.disabled = false;
+      return;
+    }
+
+    // Score ring
+    const score = report.score || 0;
+    const scoreColor = score >= 75 ? "#7ABF3A" : score >= 50 ? "#E8A838" : "#D95B5B";
+    const circumference = 2 * Math.PI * 28;
+    const dash = (score / 100) * circumference;
+
+    let html = `<div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:12px;padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6"/>
+        <circle cx="36" cy="36" r="28" fill="none" stroke="${scoreColor}" stroke-width="6"
+          stroke-dasharray="${dash} ${circumference}" stroke-dashoffset="${circumference * 0.25}"
+          stroke-linecap="round" transform="rotate(-90 36 36)"/>
+        <text x="36" y="40" text-anchor="middle" font-family="DM Mono,monospace" font-size="16" font-weight="700" fill="${scoreColor}">${score}</text>
+      </svg>
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;">Overall Score</div>
+        <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:${scoreColor};">${report.scoreLabel || ""}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.4);margin-top:2px;">Based on ${recent.length} food entries</div>
+      </div>
+    </div>`;
+
+    // Category cards
+    (report.categories || []).forEach(cat => {
+      const ratingIcons = { "STRONG": "▲", "MODERATE": "◆", "NEEDS WORK": "▼" };
+      const icon = ratingIcons[cat.rating] || "◆";
+      html += `<div style="border:1px solid ${cat.color}33;border-left:4px solid ${cat.color};border-radius:8px;padding:14px;margin-bottom:12px;background:${cat.color}08;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${cat.color};">${cat.title}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${cat.ratingColor};background:${cat.ratingColor}18;padding:3px 8px;border-radius:4px;letter-spacing:1px;">${icon} ${cat.rating}</div>
+        </div>`;
+
+      if (cat.observations?.length) {
+        html += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">Observed</div>`;
+        cat.observations.forEach(obs => {
+          html += `<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:${cat.color};flex-shrink:0;">·</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:1.5;">${obs}</span></div>`;
+        });
+      }
+
+      if (cat.recommendations?.length) {
+        html += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;letter-spacing:1px;text-transform:uppercase;margin:10px 0 5px;">Recommendations</div>`;
+        cat.recommendations.forEach(rec => {
+          html += `<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:${cat.ratingColor};flex-shrink:0;font-weight:700;">→</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;line-height:1.5;">${rec}</span></div>`;
+        });
+      }
+      html += `</div>`;
+    });
+
+    // Summary
+    if (report.summary) {
+      html += `<div style="background:rgba(58,154,154,0.08);border:1px solid rgba(58,154,154,0.2);border-radius:8px;padding:14px;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Next Steps</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.7;">${report.summary}</div>
+      </div>`;
+    }
+
+    body.innerHTML = html;
+    output.style.display = "block";
+  } catch(err) {
+    body.innerHTML = `<div style="color:#c00;font-size:11px;">Analysis failed: ${err.message}</div>`;
+    output.style.display = "block";
+  }
+  btn.textContent = "Perform Analysis";
+  btn.disabled = false;
+}
+
+function downloadFoodReport() {
+  const body = document.getElementById("foodReportBody");
+  if (!body || !body.innerText.trim()) return;
+  const header = [
+    "MY BIO PERFORMANCE — FOOD & NUTRITION ANALYSIS",
+    "Generated: " + new Date().toLocaleDateString([], { weekday:"long", year:"numeric", month:"long", day:"numeric" }),
+    "─".repeat(44),
+    ""
+  ].join("\n");
+  const blob = new Blob([header + body.innerText], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "food-nutrition-analysis-" + new Date().toISOString().slice(0,10) + ".txt";
   a.click();
   URL.revokeObjectURL(url);
 }

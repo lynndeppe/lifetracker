@@ -83,11 +83,11 @@
   .cat-btn.active { }
 
   /* Mic area */
-  .mic-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 12px; gap: 4px; }
+  .mic-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
   .mic-btn {
-    width: 90px; height: 90px; border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.03);
+    width: 56px; height: 56px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: all 0.2s;
     -webkit-tap-highlight-color: transparent;
@@ -252,26 +252,29 @@
     </div>
     <!-- Dynamic category border -->
     <div id="manualEntryBorder" style="border:none;border-radius:8px;padding:0;transition:all 0.2s;">
-      <div class="mic-wrap">
-        <button class="mic-btn" id="micBtn" ontouchstart="pressStart(event)" ontouchend="pressEnd(event)" onmousedown="pressStart(event)" onmouseup="pressEnd(event)" onmouseleave="pressEnd(event)">
-          <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
-          </svg>
-          <div class="waveform" id="waveform" style="display:none">
-            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-          </div>
-        </button>
-        <div class="mic-label mono" id="micLabel">Hold to Speak</div>
-      </div>
 
-      <div class="transcript" id="transcriptBox">
-        <textarea id="transcriptText" rows="4" placeholder="Your spoken entry will appear here... or type directly" oninput="updateSaveBtn()"></textarea>
-        <button class="clear-btn" id="clearBtn" style="display:none" onclick="clearTranscript()">×</button>
+      <!-- Input row: textarea left, mic box upper right -->
+      <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:14px;">
+        <div class="transcript" id="transcriptBox" style="flex:1;margin-bottom:0;">
+          <textarea id="transcriptText" rows="4" placeholder="Your spoken entry will appear here... or type directly" oninput="updateSaveBtn()"></textarea>
+          <button class="clear-btn" id="clearBtn" style="display:none" onclick="clearTranscript()">×</button>
+        </div>
+        <div class="mic-wrap">
+          <button class="mic-btn" id="micBtn" ontouchstart="pressStart(event)" ontouchend="pressEnd(event)" onmousedown="pressStart(event)" onmouseup="pressEnd(event)" onmouseleave="pressEnd(event)">
+            <svg id="micIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            <div class="waveform" id="waveform" style="display:none">
+              <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+              <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+              <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            </div>
+          </button>
+          <div class="mic-label mono" id="micLabel" style="font-size:8px;text-align:center;max-width:56px;">Hold</div>
+        </div>
       </div>
 
       <!-- Exercise scores (hidden unless exercise selected) -->
@@ -580,7 +583,7 @@
           <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:12px;">Groups all ingredients across your supplements, combines duplicates, and provides science-based recommended adult doses for each.</div>
           <button onclick="generateIngredientReport()"
             style="width:100%;padding:9px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="ingReportBtn">
-            Generate with AI
+            Perform Analysis
           </button>
         </div>
       </div>
@@ -1545,17 +1548,19 @@ function renderHistory() {
   const list = document.getElementById("historyList");
   if (entries.length === 0) { list.innerHTML = '<div class="empty">No entries yet.</div>'; return; }
 
+  const sorted = [...entries].sort((a, b) => b.ts - a.ts);
   const byDay = {};
-  entries.forEach(e => {
+  const dayOrder = [];
+  sorted.forEach(e => {
     const d = formatDate(e.ts);
-    if (!byDay[d]) byDay[d] = [];
+    if (!byDay[d]) { byDay[d] = []; dayOrder.push(d); }
     byDay[d].push(e);
   });
 
-  list.innerHTML = Object.entries(byDay).map(([day, dayEntries]) => `
+  list.innerHTML = dayOrder.map(day => `
     <div class="day-group">
       <div class="day-label">${day}</div>
-      ${dayEntries.map(e => { try { return entryHTML(e, true); } catch(err) { return ""; } }).join("")}
+      ${byDay[day].map(e => { try { return entryHTML(e, true); } catch(err) { return ""; } }).join("")}
     </div>
   `).join("");
 }
@@ -1571,7 +1576,7 @@ function updateUI() {
   document.getElementById("entryCount").textContent = entries.length + " entries logged";
 
   const catEntries = entries.filter(e => e.category === currentCategory);
-  const recent = catEntries.slice(0, 5);
+  const recent = catEntries.slice(0, 10);
   const recentSection = document.getElementById("recentSection");
   if (recent.length > 0) {
     recentSection.style.display = "block";
@@ -2204,7 +2209,7 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
     btn.textContent = "Regenerate with AI";
   } catch(e) {
     showToast("Error generating report: " + e.message);
-    btn.textContent = "Generate with AI";
+    btn.textContent = "Perform Analysis";
   }
   btn.disabled = false;
   btn.style.background = "#3A9A9A";

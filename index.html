@@ -1782,14 +1782,18 @@ function renderEventPicker() {
     .sort((a, b2) => b2.ts - a.ts)
     .slice(0, 4);
 
+  const totalExercise = entries.filter(e => e.category === "exercise").length;
+  const totalScored = entries.filter(e => e.category === "exercise" && e.scores && Object.keys(e.scores).length > 0).length;
+  const debugMsg = `debug: ${entries.length} total entries, ${totalExercise} exercise, ${totalScored} scored exercise, ${matchingEvents.length} in range`;
+
   if (!matchingEvents.length) {
     section.style.display = "block";
-    list.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:11px;color:#aaa;padding:4px;">No scored ${m.label} events found. Log and score a focal event first.</div>`;
+    list.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:11px;color:#aaa;padding:4px;">No scored ${m.label} events found.<br><span style="font-size:9px;color:#bbb;">${debugMsg}</span></div>`;
     return;
   }
   section.style.display = "block";
-
-  list.innerHTML = matchingEvents.map(ev => {
+  const boundsDebug = `range: ${selectedRange} | bounds: ${b.min}–${b.max}`;
+  list.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:8px;color:#ccc;margin-bottom:6px;">${boundsDebug}</div>` + matchingEvents.map(ev => {
     const score = getTotalScore(ev);
     const date = new Date(ev.ts).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
     const label = (ev.note || "Focal Event").slice(0, 40);

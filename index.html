@@ -1885,10 +1885,16 @@ DATA:
 ${eventBlocks}`;
 
   try {
-    const resp = await fetch(WORKER + "?service=gemini", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1000 } }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    let resp;
+    try {
+      resp = await fetch(WORKER + "?service=gemini", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1000 } }),
+        signal: controller.signal
+      });
+    } finally { clearTimeout(timeout); }
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     let clean = raw.replace(/```json|```/g, "").trim();
@@ -1992,7 +1998,8 @@ ${eventBlocks}`;
     document.getElementById("analysisBody").innerHTML = html;
     document.getElementById("analysisCard").style.display = "block";
   } catch(err) {
-    document.getElementById("analysisError").textContent = "Analysis failed: " + err.message;
+    const msg = err.name === "AbortError" ? "Request timed out (25s). Try reducing the Pattern Discovery Window days." : "Analysis failed: " + err.message;
+    document.getElementById("analysisError").textContent = msg;
     document.getElementById("analysisError").style.display = "block";
   }
   document.getElementById("analyzingMsg").style.display = "none";

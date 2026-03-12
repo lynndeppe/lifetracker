@@ -341,6 +341,7 @@
     <button class="sub-tab active" id="subtab-supplements" onclick="showSubTab('supplements')">Supplements</button>
     <button class="sub-tab" id="subtab-setup" onclick="showSubTab('setup')">Set-Up</button>
     <button class="sub-tab" id="subtab-history" onclick="showSubTab('history')">Entry History</button>
+    <button class="sub-tab" id="subtab-guide" onclick="showSubTab('guide')">Guide</button>
   </div>
 
   <!-- SUPPLEMENTS sub-tab -->
@@ -434,7 +435,7 @@
     </div>
 
     <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
-      <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Define Experience Ranges for Analysis</div>
+      <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Define Event Experience</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Total must not exceed 20 &nbsp;|&nbsp; Remaining: <span id="rangeRemaining" style="color:#111;font-weight:600;">6</span></div>
 
       <!-- Unified bar with three draggable segments -->
@@ -568,6 +569,118 @@
   <div id="foundation-history" style="display:none;">
     <div class="header-count mono" id="entryCount" style="margin-bottom:16px;">0 entries logged</div>
     <div id="historyList"></div>
+  </div>
+
+  <!-- GUIDE sub-tab -->
+  <div id="foundation-guide" style="display:none;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;font-weight:700;margin-bottom:16px;">User Guide</div>
+
+    <!-- Section 1 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">1 · What Is My BIO Performance?</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:8px;">A personal behavioral journal that runs entirely in your browser. Track daily life events across six categories, score your focal performance events, and use AI to surface patterns in your food, sleep, stress, add-ons, supplements, and exercise data.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;">Everything is stored privately on your device. No account, no login, no data sent anywhere except when you explicitly request an AI analysis or sync with Strava.</div>
+    </div>
+
+    <!-- Section 2 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">2 · Initial Setup  (Do This First)</div>
+
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;margin-bottom:4px;">Step 1 — Area of Focus</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Foundation → Set-Up. Type your primary performance goal (e.g. "Improve 5K run time"). This is injected into every AI analysis for personalised recommendations.</div>
+
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;margin-bottom:4px;">Step 2 — Experience Ranges</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:6px;">Set the score thresholds for OK / Good / Strong in Set-Up. A common starting split is 7 / 7 / 6 (out of 20 total). Adjust over time as you calibrate.</div>
+      <div style="background:rgba(58,154,154,0.06);border-left:3px solid #3A9A9A;padding:8px 10px;border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;color:#555;line-height:1.7;margin-bottom:10px;">OK = baseline · Good = above average · Strong = peak performance</div>
+
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;margin-bottom:4px;">Step 3 — Add Supplements</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Foundation → Supplements. Add each supplement with name, purpose, serving size, qty, and optionally scan the label for ingredients. This powers Reports 1 and 2.</div>
+
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;margin-bottom:4px;">Step 4 — Connect Strava (optional)</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Foundation → Set-Up → Connect Strava. Your activities will appear in Log Entries for one-tap import as scored Focal Events.</div>
+
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;margin-bottom:4px;">Step 5 — Take a Backup</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;">Foundation → Set-Up → Backup Data. Save the JSON file. This is your only recovery option if you clear browser data or switch devices.</div>
+    </div>
+
+    <!-- Section 3 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">3 · Daily Logging</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Tap Log Entries at the top. Select a category, write your note, and tap Log Entry.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+        ${[
+          ["◑","Sleep & Recovery","Bedtime, wake time, HRV"],
+          ["◆","Food & Nutrition","Meals, timing, gut reactions"],
+          ["◎","Stress & Mental","Mood, anxiety, mental load"],
+          ["◈","Add-Ons","Alcohol, caffeine, meds"],
+          ["▲","Focal Events","Workouts, races — scored 4–20"],
+          ["◉","Supplement","Individual doses taken"],
+        ].map(([icon,label,desc])=>`
+          <div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;margin-bottom:2px;">${icon} <span style="font-size:10px;font-weight:700;color:#111;">${label}</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;">${desc}</div>
+          </div>`).join("")}
+      </div>
+
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;margin-bottom:4px;">Scoring Focal Events</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;">Rate four dimensions 1–5: <strong>Strength</strong> · <strong>RPE</strong> (tap ⓘ for scale) · <strong>Mental State</strong> · <strong>Recovery Feel</strong>. Total score 4–20 is matched against your experience ranges.</div>
+    </div>
+
+    <!-- Section 4 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">4 · Behavioral Analysis</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:8px;">Seven AI-powered report cards. Reports auto-refresh in the background on app open (cache older than 6 hours). Tap ⓘ on any report to expand the full category breakdown.</div>
+      <div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:10px;font-family:'DM Mono',monospace;font-size:10px;color:#555;line-height:2;">
+        <div><span style="color:#3A9A9A;font-weight:700;">1.</span> Supplement Review List &nbsp;·&nbsp; instant list, no AI</div>
+        <div><span style="color:#3A9A9A;font-weight:700;">2.</span> Supplement Analysis &nbsp;·&nbsp; ingredient stack + optimal timing</div>
+        <div><span style="color:#8BAF7C;font-weight:700;">3.</span> Food &amp; Nutrition &nbsp;·&nbsp; gut, sugar, lipids, food pyramid</div>
+        <div><span style="color:#7C9CBF;font-weight:700;">4.</span> Sleep &amp; Recovery &nbsp;·&nbsp; timing, consistency, HRV</div>
+        <div><span style="color:#BF9C7C;font-weight:700;">5.</span> Stress &amp; Mental &nbsp;·&nbsp; morning / afternoon / evening patterns</div>
+        <div><span style="color:#BF7C9C;font-weight:700;">6.</span> Add-Ons &nbsp;·&nbsp; positive &amp; negative impact signals</div>
+        <div><span style="color:#7CBFBF;font-weight:700;">7.</span> Focal Events &nbsp;·&nbsp; select a tier, analyze 5 most recent</div>
+      </div>
+    </div>
+
+    <!-- Section 5 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">5 · Pattern Discovery</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:8px;">Cross-references a specific performance event against behavioral data from the three days leading up to it.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:2;">
+        <div><span style="color:#3A9A9A;font-weight:700;">1.</span> Select experience tier (OK / Good / Strong)</div>
+        <div><span style="color:#3A9A9A;font-weight:700;">2.</span> Pick one of the 4 most recent matching Focal Events</div>
+        <div><span style="color:#3A9A9A;font-weight:700;">3.</span> Tap Analyze This Event</div>
+        <div><span style="color:#3A9A9A;font-weight:700;">4.</span> Read the d3 → d2 → d1 grid — rows = report card elements, columns = days before</div>
+      </div>
+      <div style="margin-top:8px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:8px;font-family:'DM Mono',monospace;font-size:10px;color:#555;line-height:1.7;">
+        <span style="color:#7ABF3A;font-weight:700;">Strong</span> = supporting performance &nbsp;·&nbsp; <span style="color:#E8A838;font-weight:700;">Moderate</span> = mixed &nbsp;·&nbsp; <span style="color:#D95B5B;font-weight:700;">Needs Work</span> = limiting
+      </div>
+    </div>
+
+    <!-- Section 6 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">6 · Foundation Tab</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:2;">
+        <div><span style="font-weight:700;color:#111;">Supplements</span> — manage your full stack with ingredients</div>
+        <div><span style="font-weight:700;color:#111;">Entry History</span> — view, edit, or delete past entries</div>
+        <div><span style="font-weight:700;color:#111;">Set-Up</span> — Area of Focus, ranges, Strava, backup/restore</div>
+        <div><span style="font-weight:700;color:#111;">Guide</span> — this page</div>
+      </div>
+    </div>
+
+    <!-- Section 7 -->
+    <div style="margin-bottom:8px;">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">7 · Tips for Best Results</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:2.2;">
+        <div>· Log every day, even briefly — one note per category beats nothing</div>
+        <div>· Be specific in notes — the AI reads them verbatim</div>
+        <div>· Calibrate ranges — if everything scores Strong, widen the buckets</div>
+        <div>· Back up weekly — the JSON file is your only safety net</div>
+        <div>· Check Pattern Discovery after your 5th–10th scored Focal Event</div>
+        <div>· Update Area of Focus when your goals change</div>
+        <div>· Run Behavioral Analysis after a week of logging to prime the cache</div>
+      </div>
+    </div>
   </div>
 
 </div><!-- end tab-foundation -->
@@ -770,6 +883,9 @@ function loadEntries() {
   try { entries = JSON.parse(localStorage.getItem("bl_entries") || "[]"); } catch { entries = []; }
   try { supplements = JSON.parse(localStorage.getItem("bl_supplements") || "[]"); } catch { supplements = []; }
   loadRanges();
+  // Restore Area of Focus textarea
+  const aofEl = document.getElementById("areaOfFocus");
+  if (aofEl) aofEl.value = getAreaOfFocus();
   updateUI();
   renderSuppQuickLog();
   // Silently refresh report caches in background after 3s
@@ -789,9 +905,11 @@ function showSubTab(name) {
   document.getElementById("foundation-supplements").style.display = name === "supplements" ? "block" : "none";
   document.getElementById("foundation-setup").style.display = name === "setup" ? "block" : "none";
   document.getElementById("foundation-history").style.display = name === "history" ? "block" : "none";
+  document.getElementById("foundation-guide").style.display = name === "guide" ? "block" : "none";
   document.getElementById("subtab-supplements").classList.toggle("active", name === "supplements");
   document.getElementById("subtab-setup").classList.toggle("active", name === "setup");
   document.getElementById("subtab-history").classList.toggle("active", name === "history");
+  document.getElementById("subtab-guide").classList.toggle("active", name === "guide");
   if (name === "setup") setTimeout(() => {
     if(window.initRangeBar) window.initRangeBar();
     const last = localStorage.getItem("bl_last_backup");
@@ -800,7 +918,6 @@ function showSubTab(name) {
     const aof = document.getElementById("areaOfFocus");
     if (aof) aof.value = getAreaOfFocus();
   }, 50);
-  if (name === "reports") renderSuppReport();
   if (name === "history") renderHistory();
 }
 

@@ -1800,90 +1800,55 @@ async function runAnalysis() {
 
   const aof = getAreaOfFocus();
 
-  // ── Fully local rating — instant, no AI call ─────────────────────────────
-  const BAD_KW  = /bad|poor|terrible|awful|stress|anxious|tired|exhausted|junk|fast.?food|alcohol|late|skip|miss|sore|pain|hurt|rough|struggle|high|elevated/i;
-  const GOOD_KW = /good|great|excellent|strong|calm|rested|clean|healthy|fresh|early|consistent|solid|focus|energy|light|easy|well|low|minimal|perfect/i;
-  function scoreNote(note) {
-    const n = note || "";
-    const bad = BAD_KW.test(n), good = GOOD_KW.test(n);
-    if (good && !bad) return "STRONG";
-    if (bad && !good) return "NEEDS WORK";
-    return "OK";
-  }
-  function rateDay(dayEntries) {
-    const els = [], byCat = {};
-    dayEntries.forEach(e => { (byCat[e.category] = byCat[e.category]||[]).push(e); });
-    if (byCat.sleep) {
-      const sl = byCat.sleep;
-      const lf = sl.find(e=>/food|eat|drink|snack|meal|coffee|alcohol/i.test(e.note||""));
-      if (lf) els.push({ name:"Last food before bed", category:"sleep", rating:/alcohol|junk|late|10pm|11pm|midnight/i.test(lf.note||"")?"NEEDS WORK":scoreNote(lf.note), note:(lf.note||"").slice(0,30) });
-      const bd = sl.find(e=>/bed|sleep|night|pm/i.test(e.note||""));
-      if (bd) els.push({ name:"Bedtime", category:"sleep", rating:scoreNote(bd.note), note:(bd.note||"").slice(0,30) });
-      const wk = sl.find(e=>/wake|woke|morn|hour|hr|duration/i.test(e.note||""));
-      if (wk) els.push({ name:"Wake time & duration", category:"sleep", rating:scoreNote(wk.note), note:(wk.note||"").slice(0,30) });
-      const hr = sl.find(e=>/hrv|recover|readiness|whoop|oura/i.test(e.note||""));
-      if (hr) els.push({ name:"HRV / recovery", category:"sleep", rating:scoreNote(hr.note), note:(hr.note||"").slice(0,30) });
-      if (!els.find(e=>e.category==="sleep")) els.push({ name:"Sleep quality", category:"sleep", rating:scoreNote(sl[0].note), note:(sl[0].note||"").slice(0,30) });
-    }
-    if (byCat.stress) {
-      const st = byCat.stress;
-      const mg = st.find(e=>/morn|am|early|wake/i.test(e.note||""))||st[0];
-      const af = st.find(e=>/after|noon|midday/i.test(e.note||""));
-      const ev = st.find(e=>/eve|night|pm|dinner/i.test(e.note||""));
-      if (mg) els.push({ name:"Morning stress",   category:"stress", rating:scoreNote(mg.note), note:(mg.note||"").slice(0,30) });
-      if (af) els.push({ name:"Afternoon stress", category:"stress", rating:scoreNote(af.note), note:(af.note||"").slice(0,30) });
-      if (ev) els.push({ name:"Evening stress",   category:"stress", rating:scoreNote(ev.note), note:(ev.note||"").slice(0,30) });
-      if (!mg&&!af&&!ev&&st.length) els.push({ name:"Stress level", category:"stress", rating:scoreNote(st[0].note), note:(st[0].note||"").slice(0,30) });
-    }
-    if (byCat.substance) {
-      const su = byCat.substance;
-      els.push({ name: aof?`Add-on impact on ${aof}`:"Add-on impact", category:"substance",
-        rating: su.length>=2?"STRONG":scoreNote(su[0]?.note),
-        note: su.map(e=>(e.note||"").slice(0,15)).join(", ").slice(0,30) });
-    }
-    if (byCat.food) {
-      const fo = byCat.food;
-      const ml = fo.find(e=>/meal|eat|food|diet|protein|carb/i.test(e.note||""))||fo[0];
-      const hy = fo.find(e=>/water|hydrat|drink|fluid/i.test(e.note||""));
-      if (ml) els.push({ name:"Meal quality", category:"food", rating:scoreNote(ml.note), note:(ml.note||"").slice(0,30) });
-      if (hy) els.push({ name:"Hydration",    category:"food", rating:scoreNote(hy.note), note:(hy.note||"").slice(0,30) });
-      if (!ml&&!hy&&fo.length) els.push({ name:"Nutrition", category:"food", rating:scoreNote(fo[0].note), note:(fo[0].note||"").slice(0,30) });
-    }
-    if (byCat.supplement) {
-      const sp = byCat.supplement;
-      els.push({ name:"Supplements taken", category:"supplement", rating:sp.length>=2?"STRONG":"OK", note:sp.map(e=>(e.note||"").slice(0,15)).join(", ").slice(0,30) });
-    }
-    return els;
-  }
 
-  // Aggregate ratings across all focal events per day slot
-  const RORD = {"STRONG":2,"OK":1,"NEEDS WORK":0};
-  const slotMap = {};
-  focalEvents.forEach(focal => {
-    for (let d = daysBack; d >= 1; d--) {
-      const key = `d${d}`;
-      const ds = focal.ts - d*86400000, de = focal.ts - (d-1)*86400000;
-      const de2 = entries.filter(e => selectedCats.includes(e.category) && e.ts>=ds && e.ts<de);
-      rateDay(de2).forEach(el => {
-        const ek = `${el.name}|${el.category}`;
-        if (!slotMap[key]) slotMap[key] = {};
-        (slotMap[key][ek] = slotMap[key][ek]||[]).push(el);
+  // ── AI rating via Gemini (thinking disabled for speed) ──────────────────
+  const prompt = `Rate each behavioral element per day as OK, STRONG, or NEEDS WORK based on performance impact. Only rate elements with actual data. Return ONLY JSON:
+{"days":[{"day":"d1","elements":[{"name":"Last food before bed","category":"sleep","rating":"OK","note":"pizza 10pm"},{"name":"Morning stress","category":"stress","rating":"STRONG","note":"calm"}]}]}
+
+Elements: sleep=[Last food before bed, Bedtime, Wake time & duration, HRV/recovery], stress=[Morning stress, Afternoon stress, Evening stress], substance=[Add-on impact${aof ? ` on ${aof}` : ""}], food=[Meal quality, Hydration], supplement=[Supplements taken]
+Days d${daysBack} to d1.${aof ? ` Focus: "${aof}".` : ""}
+
+DATA:
+${eventBlocks}`;
+
+  let days = [];
+  try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 25000);
+    let resp;
+    try {
+      resp = await fetch(WORKER + "?service=gemini", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:1500,thinkingConfig:{thinkingBudget:0}} }),
+        signal: controller.signal
       });
+    } finally { clearTimeout(tid); }
+    const gdata = await resp.json();
+    const raw = gdata?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    let clean = raw.replace(/```json|```/g,"").trim();
+    let parsed = {days:[]};
+    try { parsed = JSON.parse(clean); } catch(pe) {
+      const m2 = clean.match(/[\s\S]*/);
+      const obj = clean.match(/\{[\s\S]*\}/);
+      if (obj) {
+        let att = obj[0];
+        try { parsed = JSON.parse(att); } catch(e2) {
+          if ((att.match(/"/g)||[]).length%2!==0) att+='"';
+          let op=(att.match(/\{/g)||[]).length-(att.match(/\}/g)||[]).length;
+          let ar=(att.match(/\[/g)||[]).length-(att.match(/\]/g)||[]).length;
+          while(ar-->0) att+="]"; while(op-->0) att+="}";
+          try { parsed = JSON.parse(att); } catch(e3){}
+        }
+      }
     }
-  });
+    days = (parsed.days||[]).sort((a,b)=>parseInt(b.day?.replace("d","")||0)-parseInt(a.day?.replace("d","")||0));
+  } catch(aiErr) {
+    const errEl = document.getElementById("analysisError");
+    errEl.textContent = aiErr.name==="AbortError" ? "Timed out — try fewer days or categories" : "Analysis failed: "+aiErr.message;
+    errEl.style.display = "block";
+    return;
+  }
 
-  const days = Object.keys(slotMap)
-    .sort((a,b) => parseInt(b.replace("d","")) - parseInt(a.replace("d","")))
-    .map(dayKey => ({
-      day: dayKey,
-      elements: Object.entries(slotMap[dayKey]).map(([ek, arr]) => {
-        const [name, category] = ek.split("|");
-        const counts = {"STRONG":0,"OK":0,"NEEDS WORK":0};
-        arr.forEach(e => { if (counts[e.rating]!==undefined) counts[e.rating]++; });
-        const rating = Object.entries(counts).sort((a,b)=>b[1]-a[1]||RORD[a[0]]-RORD[b[0]])[0][0];
-        return { name, category, rating, note: arr.find(e=>e.rating===rating)?.note||arr[0]?.note||"" };
-      })
-    }));
 
   try {
     const RATING_ROWS = [

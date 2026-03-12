@@ -1798,9 +1798,6 @@ async function runAnalysis() {
     return dayLines;
   }).join("\n\n---\n\n");
 
-  console.log("focalEvents count:", focalEvents.length);
-  console.log("eventBlocks preview:", eventBlocks.slice(0, 300));
-
   const aof = getAreaOfFocus();
 
 
@@ -1827,7 +1824,9 @@ ${eventBlocks}`;
       });
     } finally { clearTimeout(tid); }
     const gdata = await resp.json();
-    console.log("Gemini raw response:", JSON.stringify(gdata).slice(0, 500));
+    const debugInfo = `Events:${focalEvents.length} | Raw:${JSON.stringify(gdata).slice(0,200)}`;
+    document.getElementById("analysisError").textContent = "DEBUG: " + debugInfo;
+    document.getElementById("analysisError").style.display = "block";
     const raw = gdata?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     let clean = raw.replace(/```json|```/g,"").trim();
     let parsed = {days:[]};
@@ -1846,7 +1845,6 @@ ${eventBlocks}`;
       }
     }
     days = (parsed.days||[]).sort((a,b)=>parseInt(b.day?.replace("d","")||0)-parseInt(a.day?.replace("d","")||0));
-    console.log("Parsed days count:", days.length, "days:", JSON.stringify(days).slice(0,200));
   } catch(aiErr) {
     const errEl = document.getElementById("analysisError");
     errEl.textContent = aiErr.name==="AbortError" ? "Timed out — try fewer days or categories" : "Analysis failed: "+aiErr.message;

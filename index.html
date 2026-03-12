@@ -2491,10 +2491,13 @@ async function generateIngredientReport() {
     });
   });
 
-  if (!Object.keys(ingMap).length) { showToast("No scanned ingredients found. Scan supplement labels first."); return; }
+  const hasIngredients = Object.keys(ingMap).length > 0;
+  if (!hasIngredients) {
+    // No scanned ingredients — still run timing-only analysis
+  }
 
   // Build prompt data
-  const ingLines = Object.values(ingMap).map(ing => {
+  const ingLines = hasIngredients ? Object.values(ingMap).map(ing => {
     // Try to sum numeric amounts across all sources
     let totalNum = 0;
     let unit = "";
@@ -2513,13 +2516,14 @@ async function generateIngredientReport() {
       : ing.entries.map(e => e.scaledAmount || e.labelAmount || "?").join(" + ");
     const sources = ing.entries.map(e => e.supp).join(", ");
     return `- ${ing.displayName}: ${combinedAmt} total (from: ${sources}; label per serving: ${ing.entries.map(e => e.labelAmount || "?").join(", ")})`
-  }).join("\n");
+  }).join("\n") : "(No ingredient data scanned — timing analysis only)";
 
   const aof = getAreaOfFocus();
   const suppTimingList = [...supplements].sort((a,b) => a.name.localeCompare(b.name))
     .map(s => `- ${s.name}: ${s.desc || "general use"}`).join("\n");
 
-  const prompt = `You are a sports nutrition and health scientist. Below is my complete supplement ingredient stack. Amounts listed are my NET TOTAL intake per session — already scaled by how many units I take versus the label serving size, and summed across all products containing that ingredient.
+  const prompt = hasIngredients
+    ? `You are a sports nutrition and health scientist. Below is my complete supplement ingredient stack. Amounts listed are my NET TOTAL intake per session — already scaled by how many units I take versus the label serving size, and summed across all products containing that ingredient.
 
 YOUR TASK:
 1. Group these ingredients by category (e.g. Vitamins, Minerals, Amino Acids, Adaptogens, Fatty Acids, Probiotics, Herbal Extracts, etc.)
@@ -2547,11 +2551,34 @@ ${ingLines}
 MY SUPPLEMENTS (for timing section):
 ${suppTimingList}
 
-Be factual, concise, and science-based. Do not recommend purchasing anything.`;
+Be factual, concise, and science-based. Do not recommend purchasing anything.`
+    : `You are a sports nutritionist. For each supplement listed, provide the optimal time of day to take it${aof ? `, considering the user's area of focus: "${aof}"` : ""}. Keep each recommendation to one short line (max 12 words).
+
+Format as:
+  SUPPLEMENT NAME — [optimal time]
+
+MY SUPPLEMENTS:
+${suppTimingList}
+
+Be factual and science-based.`;
 
   const btn = document.getElementById("ingReportBtn");
   const output = document.getElementById("ingReportOutput");
   const body = document.getElementById("ingReportBody");
+
+  // If report already exists, toggle visibility
+  if (body.innerHTML.trim() && output.style.display !== "none") {
+    output.style.display = "none";
+    btn.textContent = "View Report";
+    return;
+  }
+  if (body.innerHTML.trim() && output.style.display === "none") {
+    output.style.display = "block";
+    btn.textContent = "Hide Report";
+    return;
+  }
+
+  // First run — generate
   btn.textContent = "Generating…";
   btn.disabled = true;
   btn.style.background = "#777";
@@ -2574,7 +2601,7 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
     try { data = JSON.parse(raw); } catch(pe) {
       body.textContent = "Parse error: " + raw.slice(0, 300);
       output.style.display = "block";
-      btn.textContent = "Regenerate with AI";
+      btn.textContent = "Perform Analysis";
       btn.disabled = false; btn.style.background = "#3A9A9A";
       return;
     }
@@ -2591,7 +2618,7 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
       .replace(/\n/g, "<br>");
     body.innerHTML = html;
     output.style.display = "block";
-    btn.textContent = "Regenerate with AI";
+    btn.textContent = "Hide Report";
   } catch(e) {
     showToast("Error generating report: " + e.message);
     btn.textContent = "Perform Analysis";

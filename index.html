@@ -2043,7 +2043,7 @@ ${dayBlocks.join("\n\n")}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000 } }),
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000, thinkingConfig: { thinkingBudget: 0 } } }),
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2092,15 +2092,19 @@ function getAreaOfFocus() {
 }
 
 function backupData() {
+  const supps = JSON.parse(localStorage.getItem("bl_supplements") || "[]");
   const data = {
-    version: 1,
+    version: 2,
     exported: new Date().toISOString(),
     entries: JSON.parse(localStorage.getItem("bl_entries") || "[]"),
     ranges: JSON.parse(localStorage.getItem("bl_ranges") || "{}"),
-    supplements: JSON.parse(localStorage.getItem("bl_supplements") || "[]"),
+    supplements: supps,
+    area_of_focus: localStorage.getItem("bl_area_of_focus") || "",
     strava_token: JSON.parse(localStorage.getItem("strava_token") || "null"),
     strava_activities: JSON.parse(localStorage.getItem("strava_last_activities") || "[]"),
   };
+  // Verify ingredients are present
+  const suppWithIngredients = supps.filter(s => s.ingredients && s.ingredients.length > 0).length;
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -2112,7 +2116,7 @@ function backupData() {
   const now = new Date().toLocaleString();
   localStorage.setItem("bl_last_backup", now);
   const label = document.getElementById("lastBackupLabel");
-  if (label) label.textContent = "Last backup: " + now;
+  if (label) label.textContent = `Last backup: ${now} (${supps.length} supplements, ${suppWithIngredients} with ingredients)`;
 }
 
 function restoreData(event) {
@@ -2127,6 +2131,7 @@ function restoreData(event) {
       localStorage.setItem("bl_entries", JSON.stringify(data.entries));
       if (data.ranges) localStorage.setItem("bl_ranges", JSON.stringify(data.ranges));
       if (data.supplements) localStorage.setItem("bl_supplements", JSON.stringify(data.supplements));
+      if (data.area_of_focus) localStorage.setItem("bl_area_of_focus", data.area_of_focus);
       if (data.strava_token) localStorage.setItem("strava_token", JSON.stringify(data.strava_token));
       if (data.strava_activities) localStorage.setItem("strava_last_activities", JSON.stringify(data.strava_activities));
       entries = data.entries;
@@ -2220,7 +2225,7 @@ async function toggleSuppReportPreview() {
     try {
       const resp = await fetch(WORKER + "?service=gemini", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:600} })
+        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:600,thinkingConfig:{thinkingBudget:0}} })
       });
       const data = await resp.json();
       const raw = (data?.candidates?.[0]?.content?.parts?.[0]?.text || "").replace(/```json|```/g,"").trim();
@@ -2349,7 +2354,7 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
         contents: [{
           parts: [{ text: prompt }]
         }],
-        generationConfig: { maxOutputTokens: 8192 }
+        generationConfig: { maxOutputTokens: 4000, thinkingConfig: { thinkingBudget: 0 } }
       })
     });
     const raw = await res.text();
@@ -2480,7 +2485,7 @@ ${entryLines}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 6000 } }),
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000, thinkingConfig: { thinkingBudget: 0 } } }),
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2695,7 +2700,7 @@ async function generateCategoryReport(cat) {
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ contents:[{parts:[{text: cfg.prompt(catEntries, aof)}]}], generationConfig:{maxOutputTokens:6000} })
+      body: JSON.stringify({ contents:[{parts:[{text: cfg.prompt(catEntries, aof)}]}], generationConfig:{maxOutputTokens:4000,thinkingConfig:{thinkingBudget:0}} })
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2792,7 +2797,7 @@ ${eventBlocks}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:6000} })
+      body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:4000,thinkingConfig:{thinkingBudget:0}} })
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";

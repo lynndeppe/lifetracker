@@ -2815,12 +2815,14 @@ async function generateCategoryReport(cat, silent=false) {
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     let clean = raw.replace(/```json|```/g,"").trim();
     let report;
-    try { report = JSON.parse(clean); } catch(pe) {
+    // Try direct parse
+    try { report = JSON.parse(clean); } catch(pe) {}
+    // Try extracting JSON object
+    if (!report) {
       const m = clean.match(/\{[\s\S]*\}/);
       if (m) {
         let attempt = m[0];
         try { report = JSON.parse(attempt); } catch(e2) {
-          // Close truncated JSON
           if ((attempt.match(/"/g)||[]).length % 2 !== 0) attempt += '"';
           let opens = (attempt.match(/\{/g)||[]).length - (attempt.match(/\}/g)||[]).length;
           let arrOpens = (attempt.match(/\[/g)||[]).length - (attempt.match(/\]/g)||[]).length;
@@ -2830,19 +2832,15 @@ async function generateCategoryReport(cat, silent=false) {
         }
       }
     }
-    if (!report) throw new Error("Could not parse response");
-    if (!report) throw new Error("Could not parse response");
+    if (!report) throw new Error("Could not parse response — raw: " + clean.slice(0,120));
     if (!silent) { body.innerHTML = renderRatingReport(report, cfg.color); output.style.display = "block"; }
     // Cache for Pattern Reasoning
     localStorage.setItem(`bl_report_${cat}`, JSON.stringify({ ts: Date.now(), report }));
   } catch(err) {
-    if (!silent) { body.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:11px;color:#c00;">Analysis failed: ${err.message}</div>`; output.style.display = "block"; }
+    if (!silent) { body.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:11px;color:#c00;">${err.message}</div>`; output.style.display = "block"; }
   }
   if (!silent) { btn.textContent = "Perform Analysis"; btn.disabled = false; }
 }
-
-
-// ── Focal Events Report ───────────────────────────────────────────
 let focalReportRange = null;
 function setFocalReportRange(key) {
   focalReportRange = key;

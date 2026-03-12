@@ -1740,8 +1740,6 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 function buildHeatmap(focalEvents, daysBack, selectedCats) {
-  // Build per-event, per-day behavior lists
-  // eventRows[i][day] = array of category keys that had entries that day
   const eventRows = focalEvents.map(focal => {
     const windowStart = focal.ts - daysBack * 86400000;
     const days = Array.from({ length: daysBack }, () => []);
@@ -1753,80 +1751,6 @@ function buildHeatmap(focalEvents, daysBack, selectedCats) {
     });
     return days;
   });
-
-  const trackH = 36;   // height per event row
-  const labelW = 110;  // left label width
-  const dayW   = 38;   // width per day column
-  const dotR   = 5;    // dot radius
-  const totalW = labelW + daysBack * dayW;
-
-  let html = `<div style="overflow-x:auto;"><div style="min-width:${totalW}px;">`;
-
-  // Column headers — day labels (-N … -1)
-  html += `<div style="display:flex;margin-left:${labelW}px;margin-bottom:6px;">`;
-  for (let d = 0; d < daysBack; d++) {
-    html += `<div style="width:${dayW}px;font-family:'DM Mono',monospace;font-size:8px;color:#999;text-align:center;">-${daysBack - d}d</div>`;
-  }
-  html += `</div>`;
-
-  // One row per focal event
-  focalEvents.forEach((focal, idx) => {
-    const dt = new Date(focal.ts).toLocaleDateString([], { month:"short", day:"numeric" });
-    const total = getTotalScore(focal);
-    const scoreLabel = total !== null ? `${total}/20` : "";
-    const rowBg = idx % 2 === 0 ? "rgba(0,0,0,0.02)" : "transparent";
-
-    html += `<div style="display:flex;align-items:center;background:${rowBg};border-radius:4px;margin-bottom:2px;">`;
-
-    // Label
-    html += `<div style="width:${labelW}px;flex-shrink:0;padding-right:10px;text-align:right;">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;white-space:nowrap;">${dt}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#aaa;">${scoreLabel}</div>
-    </div>`;
-
-    // Day columns — horizontal timeline bar with baseline
-    html += `<div style="display:flex;align-items:center;flex:1;position:relative;">`;
-    // Baseline line
-    html += `<div style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,0.08);z-index:0;"></div>`;
-    for (let d = 0; d < daysBack; d++) {
-      const cats = eventRows[idx][d];
-      html += `<div style="width:${dayW}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:${trackH}px;position:relative;z-index:1;border-right:1px dashed rgba(0,0,0,0.05);">`;
-      if (cats.length === 0) {
-        html += `<div style="width:4px;height:4px;border-radius:50%;background:rgba(0,0,0,0.08);"></div>`;
-      } else {
-        cats.forEach(cat => {
-          const color = catColor(cat);
-          const label = CATEGORIES[cat]?.icon || "·";
-          html += `<div title="${CATEGORIES[cat]?.label || cat}" style="width:${dotR*2+2}px;height:${dotR*2+2}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:7px;color:white;flex-shrink:0;">${label}</div>`;
-        });
-      }
-      html += `</div>`;
-    }
-
-    // Event marker at the end
-    html += `<div style="width:10px;height:10px;border-radius:50%;background:#7ABF3A;border:2px solid white;box-shadow:0 0 0 1px #7ABF3A;flex-shrink:0;" title="Focal event: ${focal.note||''}"></div>`;
-    html += `</div>`; // day columns
-    html += `</div>`; // row
-  });
-
-  // Day-by-day commonality placeholder — filled by AI after analysis
-  html += `<div id="commonalitySection" style="margin-top:10px;border-top:1px solid rgba(0,0,0,0.08);padding-top:10px;">
-    <div style="font-family:'DM Mono',monospace;font-size:8px;color:#999;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Day-by-day commonality</div>
-    <div id="commonalityBody" style="font-family:'DM Mono',monospace;font-size:11px;color:#777;">Generating after analysis...</div>
-  </div>`;
-
-  html += `</div></div>`;
-
-  // Legend
-  document.getElementById("heatmapLegend").innerHTML = selectedCats.map(c =>
-    `<div style="display:flex;align-items:center;gap:5px;">
-      <div style="width:10px;height:10px;border-radius:50%;background:${catColor(c)};flex-shrink:0;"></div>
-      <span style="font-family:'DM Mono',monospace;font-size:9px;color:#555;text-transform:uppercase;">${CATEGORIES[c]?.label||c}</span>
-    </div>`
-  ).join("");
-
-  document.getElementById("heatmapGrid").innerHTML = html;
-  document.getElementById("heatmapCard").style.display = "block";
   return eventRows;
 }
 

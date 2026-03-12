@@ -609,18 +609,30 @@
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Tap Log Entries at the top. Select a category, write your note, and tap Log Entry.</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-        ${[
-          ["◑","Sleep & Recovery","Bedtime, wake time, HRV"],
-          ["◆","Food & Nutrition","Meals, timing, gut reactions"],
-          ["◎","Stress & Mental","Mood, anxiety, mental load"],
-          ["◈","Add-Ons","Alcohol, caffeine, meds"],
-          ["▲","Focal Events","Workouts, races — scored 4–20"],
-          ["◉","Supplement","Individual doses taken"],
-        ].map(([icon,label,desc])=>`
           <div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:8px;">
-            <div style="font-family:'DM Mono',monospace;font-size:13px;margin-bottom:2px;">${icon} <span style="font-size:10px;font-weight:700;color:#111;">${label}</span></div>
-            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;">${desc}</div>
-          </div>`).join("")}
+            <div style="font-family:'DM Mono',monospace;font-size:13px;margin-bottom:2px;">◑ <span style="font-size:10px;font-weight:700;color:#111;">Sleep & Recovery</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;">Bedtime, wake time, HRV</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;margin-bottom:2px;">◆ <span style="font-size:10px;font-weight:700;color:#111;">Food & Nutrition</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;">Meals, timing, gut reactions</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;margin-bottom:2px;">◎ <span style="font-size:10px;font-weight:700;color:#111;">Stress & Mental</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;">Mood, anxiety, mental load</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;margin-bottom:2px;">◈ <span style="font-size:10px;font-weight:700;color:#111;">Add-Ons</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;">Alcohol, caffeine, meds</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;margin-bottom:2px;">▲ <span style="font-size:10px;font-weight:700;color:#111;">Focal Events</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;">Workouts, races — scored 4–20</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;margin-bottom:2px;">◉ <span style="font-size:10px;font-weight:700;color:#111;">Supplement</span></div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;">Individual doses taken</div>
+          </div>
       </div>
 
       <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;margin-bottom:4px;">Scoring Focal Events</div>

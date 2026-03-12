@@ -694,15 +694,7 @@
   <button class="analyze-btn disabled mono" id="analyzeBtn" onclick="runAnalysis()">Select a Range First</button>
   <div id="analyzingMsg" style="display:none" class="analyzing-msg">Analyzing patterns across selected events...</div>
   <div id="analysisError" style="display:none" class="error-banner"></div>
-
-  <!-- Timeline -->
-  <div id="heatmapCard" style="display:none;margin-top:16px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;margin-bottom:8px;">Behavior Timeline</div>
-    <div id="heatmapLegend" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;"></div>
-    <div id="heatmapGrid"></div>
-  </div>
-
-  <!-- Pattern Reasoning — dots + reasoning, no paragraphs -->
+  <!-- Pattern Reasoning -->
   <div id="analysisCard" style="display:none;margin-top:16px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;margin-bottom:12px;">Pattern Reasoning</div>
     <div id="analysisBody"></div>
@@ -1861,7 +1853,6 @@ async function runAnalysis() {
   document.getElementById("analyzeBtn").textContent = "Analyzing...";
   document.getElementById("analyzingMsg").style.display = "block";
   document.getElementById("analysisCard").style.display = "none";
-  document.getElementById("heatmapCard").style.display = "none";
   document.getElementById("analysisError").style.display = "none";
 
   const eventRows = buildHeatmap(focalEvents, daysBack, selectedCats);
@@ -1870,19 +1861,24 @@ async function runAnalysis() {
     const windowStart = focal.ts - daysBack * 86400000;
     const totalScore = getTotalScore(focal);
     const focalScores = focal.scores ? Object.entries(focal.scores).map(([k,v]) => `${k}: ${v}/5`).join(", ") : "no scores";
-    const behaviors = entries.filter(e => {
-      if (!selectedCats.includes(e.category)) return false;
-      if (e.ts < windowStart || e.ts >= focal.ts) return false;
-      if (e.category === "supplement" && e.suppId) {
-        const s = supplements.find(s => s.id === e.suppId);
-        if (s && !suppWasActiveAt(s, e.ts)) return false;
+
+    // Build day-by-day breakdown
+    let dayLines = `EVENT ${idx+1} [${new Date(focal.ts).toLocaleDateString([],{month:"short",day:"numeric"})}] Score:${totalScore}/20\n`;
+    for (let d = daysBack; d >= 1; d--) {
+      const dayStart = focal.ts - d * 86400000;
+      const dayEnd = focal.ts - (d-1) * 86400000;
+      const dayEntries = entries.filter(e => {
+        if (!selectedCats.includes(e.category)) return false;
+        if (e.ts < dayStart || e.ts >= dayEnd) return false;
+        return true;
+      });
+      if (dayEntries.length) {
+        dayLines += `  d${d}: ` + dayEntries.map(e => `[${CATEGORIES[e.category]?.label||e.category}] ${e.note}`).join(" | ") + "\n";
+      } else {
+        dayLines += `  d${d}: (no entries)\n`;
       }
-      return true;
-    });
-    const behaviorText = behaviors.length
-      ? behaviors.map(b => `    [${new Date(b.ts).toLocaleString()}] [${CATEGORIES[b.category]?.label||b.category}] ${b.note}`).join("\n")
-      : "    (no behavioral entries in this window)";
-    return `EVENT ${idx+1} — ${new Date(focal.ts).toLocaleString()} | Total score: ${totalScore}/20 (${m.label} range)\nNote: ${focal.note||"(no note)"}\nScores: ${focalScores}\nBehaviors ${daysBack} day(s) before:\n${behaviorText}`;
+    }
+    return dayLines;
   }).join("\n\n---\n\n");
 
   const aof = getAreaOfFocus();
@@ -2024,8 +2020,6 @@ ${eventBlocks}`;
     if (!days.length) html = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">Not enough data to build grid yet — log more entries in the days before your focal events.</div>`;
     document.getElementById("analysisBody").innerHTML = html;
     document.getElementById("analysisCard").style.display = "block";
-    // Fire commonality analysis async (non-blocking)
-    generateCommonality(focalEvents, daysBack, selectedCats, eventRows);
   } catch(err) {
     document.getElementById("analysisError").textContent = "Analysis failed: " + err.message;
     document.getElementById("analysisError").style.display = "block";

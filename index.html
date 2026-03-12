@@ -50,8 +50,8 @@
   .header-count { margin-top: 3px; font-size: 12px; color: var(--muted); }
 
   /* Tabs */
-  .tabs { max-width: 640px; margin: 20px auto 0; padding: 0 20px; display: flex; flex-direction: column; gap: 4px; width: 100%; box-sizing: border-box; }
-  .tab-row-bottom { display: flex; gap: 4px; width: 100%; }
+  .tabs { max-width: 640px; margin: 20px auto 0; padding: 0 20px; display: flex; flex-direction: column; gap: 2px; width: 100%; box-sizing: border-box; }
+  .tab-row-bottom { display: flex; gap: 2px; width: 100%; }
   .tab-row-bottom .tab { flex: 1; text-align: center; white-space: normal; flex-shrink: 1; min-width: 0; }
   .tab {
     padding: 13px 16px; border: 1px solid var(--border); border-radius: 4px;
@@ -62,6 +62,8 @@
   .tab.active { background: #7ABF3A; color: #fff; border-color: #7ABF3A; }
   .tab-patterns { width: 100%; text-align: center; background: #3A9A9A !important; color: white !important; border-color: #3A9A9A !important; font-size: 13px !important; letter-spacing: 2px !important; padding: 14px !important; }
   .tab-patterns.active { background: #7ABF3A !important; border-color: #7ABF3A !important; }
+  .tab-behavioral { width: 100%; text-align: center; background: #5B7FA6 !important; color: white !important; border-color: #5B7FA6 !important; font-size: 13px !important; letter-spacing: 2px !important; padding: 14px !important; }
+  .tab-behavioral.active { background: #7ABF3A !important; border-color: #7ABF3A !important; }
   /* Foundation sub-tabs */
   .sub-tabs { display: flex; gap: 3px; margin-bottom: 16px; }
   .sub-tab { padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: transparent; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px; transition: all 0.2s; -webkit-tap-highlight-color: transparent; text-transform: uppercase; white-space: nowrap; flex: 1; text-align: center; }
@@ -183,7 +185,7 @@
   .entry-card { padding: 12px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; display: flex; gap: 10px; align-items: flex-start; }
   .entry-icon { font-size: 16px; margin-top: 2px; flex-shrink: 0; }
   .entry-time { font-size: 10px; color: var(--dim); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
-  .entry-note { font-size: 13px; color: #B0A090; line-height: 1.55; }
+  .entry-note { font-size: 13px; color: #111111; line-height: 1.55; }
   .entry-cat { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1px; margin-bottom: 4px; }
   .entry-scores { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
   .score-tag { font-size: 10px; font-family: 'DM Mono', monospace; color: #7CBFBF; background: rgba(124,191,191,0.08); padding: "3px 7px"; border-radius: 3px; padding: 3px 7px; }
@@ -229,11 +231,12 @@
 </div>
 
 <div class="tabs">
-  <div class="tab-row-bottom">
-    <button class="tab active mono" onclick="showTab('log')">Log Entries</button>
-    <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
-  </div>
   <button class="tab tab-patterns mono" onclick="showTab('analyze')" id="tabPatterns">Pattern Discovery</button>
+  <button class="tab tab-behavioral mono" onclick="showTab('behavioral')" id="tabBehavioral">Behavioral Analysis</button>
+  <div class="tab-row-bottom">
+    <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
+    <button class="tab active mono" onclick="showTab('log')">Log Entries</button>
+  </div>
 </div>
 
 <!-- LOG TAB -->
@@ -336,7 +339,6 @@
 
   <div class="sub-tabs">
     <button class="sub-tab active" id="subtab-supplements" onclick="showSubTab('supplements')">Supplements</button>
-    <button class="sub-tab" id="subtab-reports" onclick="showSubTab('reports')">Reports</button>
     <button class="sub-tab" id="subtab-setup" onclick="showSubTab('setup')">Set-Up</button>
     <button class="sub-tab" id="subtab-history" onclick="showSubTab('history')">Entry History</button>
   </div>
@@ -560,8 +562,21 @@
 
   </div><!-- end foundation-setup -->
 
+
+
+  <!-- HISTORY sub-tab -->
+  <div id="foundation-history" style="display:none;">
+    <div class="header-count mono" id="entryCount" style="margin-bottom:16px;">0 entries logged</div>
+    <div id="historyList"></div>
+  </div>
+
+</div><!-- end tab-foundation -->
+
+<!-- BEHAVIORAL ANALYSIS TAB -->
+<div class="content" id="tab-behavioral" style="display:none">
+  <p class="analyze-intro" style="margin-bottom:16px;">AI-generated report cards across all behavioral categories — food, sleep, stress, add-ons, and focal events.</p>
   <!-- REPORTS sub-tab -->
-  <div id="foundation-reports" style="display:none;">
+  <div id="behavioral-reports">
 
     <!-- Report 1: Supplement Review List -->
     <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
@@ -669,15 +684,8 @@
       </div>
     </div>
 
-  </div><!-- end foundation-reports -->
-
-  <!-- HISTORY sub-tab -->
-  <div id="foundation-history" style="display:none;">
-    <div class="header-count mono" id="entryCount" style="margin-bottom:16px;">0 entries logged</div>
-    <div id="historyList"></div>
-  </div>
-
-</div><!-- end tab-foundation -->
+  </div><!-- end behavioral-reports -->
+</div><!-- end tab-behavioral -->
 
 <!-- ANALYZE TAB -->
 <div class="content" id="tab-analyze" style="display:none">
@@ -780,11 +788,9 @@ function saveSupplements() {
 function showSubTab(name) {
   document.getElementById("foundation-supplements").style.display = name === "supplements" ? "block" : "none";
   document.getElementById("foundation-setup").style.display = name === "setup" ? "block" : "none";
-  document.getElementById("foundation-reports").style.display = name === "reports" ? "block" : "none";
   document.getElementById("foundation-history").style.display = name === "history" ? "block" : "none";
   document.getElementById("subtab-supplements").classList.toggle("active", name === "supplements");
   document.getElementById("subtab-setup").classList.toggle("active", name === "setup");
-  document.getElementById("subtab-reports").classList.toggle("active", name === "reports");
   document.getElementById("subtab-history").classList.toggle("active", name === "history");
   if (name === "setup") setTimeout(() => {
     if(window.initRangeBar) window.initRangeBar();
@@ -1302,7 +1308,7 @@ function renderSuppQuickLog() {
 
 // ── Tab switching ─────────────────────────────────────────────────
 function showTab(name) {
-  ["log","analyze","foundation"].forEach(t => {
+  ["log","analyze","foundation","behavioral"].forEach(t => {
     const el = document.getElementById("tab-"+t);
     if (el) el.style.display = t===name?"block":"none";
   });

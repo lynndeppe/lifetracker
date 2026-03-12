@@ -1885,99 +1885,134 @@ async function runAnalysis() {
     return `EVENT ${idx+1} — ${new Date(focal.ts).toLocaleString()} | Total score: ${totalScore}/20 (${m.label} range)\nNote: ${focal.note||"(no note)"}\nScores: ${focalScores}\nBehaviors ${daysBack} day(s) before:\n${behaviorText}`;
   }).join("\n\n---\n\n");
 
-  const prompt = `You are an expert in human performance and behavioral pattern analysis.
+  const aof = getAreaOfFocus();
+  const prompt = `You are a human performance analyst. Analyze the behavioral data logged in the ${daysBack} days before each of ${focalEvents.length} "${m.label}" performance events.
 
-The user wants to understand what behavioral patterns consistently precede their "${m.label}" performance experiences (score range ${b.min+1}–${b.max} out of 20).
+For each day (d1 = day immediately before the event, d2 = two days before, etc.) rate EACH of the following specific behavioral elements as exactly: OK, NEEDS WORK, or STRONG.
 
-Analyze ${focalEvents.length} recent events across ${daysBack} days before each event.
+Elements to rate per day:
+SLEEP: "Last food/drink before bed", "Bedtime consistency", "Wake time & duration", "HRV/recovery quality"
+STRESS: "Morning stress", "Afternoon stress", "Evening stress"
+ADD-ONS: "Add-on impact${aof ? ` on ${aof}` : ""}"
+FOOD: "Meal quality", "Hydration"
+${aof ? `Consider the user's area of focus: "${aof}" when rating impacts.` : ""}
 
-For each day (d1=day before event, d2=two days before, etc.) and each behavioral category that has entries, rate that day's behaviors as STRONG, MODERATE, or NEEDS WORK relative to their impact on performance.
+Only include elements where actual log entries exist for that day. Skip elements with no data.
 
 Respond ONLY as valid JSON, no other text:
 {
-  "grid": [
-    { "day": "d1", "ratings": [
-      { "category": "sleep", "rating": "STRONG", "note": "7-8h logged" },
-      { "category": "food", "rating": "MODERATE", "note": "mixed quality" }
-    ]},
-    { "day": "d2", "ratings": [...] }
+  "days": [
+    {
+      "day": "d${daysBack}",
+      "elements": [
+        { "name": "Last food/drink before bed", "category": "sleep", "rating": "OK", "note": "ate at 10pm" },
+        { "name": "Morning stress", "category": "stress", "rating": "STRONG", "note": "calm morning" }
+      ]
+    }
   ]
 }
 
-Days should go from d${daysBack} (farthest) to d1 (closest to event). Only include categories with actual entries. Use category keys: sleep, food, stress, substance, exercise, supplement.
+Include a "days" entry for each of the ${daysBack} days (d${daysBack} through d1), farthest first.
 
+DATA:
 ${eventBlocks}`;
 
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1500 } }),
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 3000 } }),
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     let clean = raw.replace(/```json|```/g, "").trim();
-    let parsed = { grid: [] };
+    let parsed = { days: [] };
     try { parsed = JSON.parse(clean); } catch(pe) {
       const m2 = clean.match(/\{[\s\S]*\}/);
-      if (m2) try { parsed = JSON.parse(m2[0]); } catch(e2) {}
+      if (m2) {
+        let attempt = m2[0];
+        try { parsed = JSON.parse(attempt); } catch(e2) {
+          if ((attempt.match(/"/g)||[]).length % 2 !== 0) attempt += '"';
+          let opens = (attempt.match(/\{/g)||[]).length - (attempt.match(/\}/g)||[]).length;
+          let arrOpens = (attempt.match(/\[/g)||[]).length - (attempt.match(/\]/g)||[]).length;
+          while (arrOpens-- > 0) attempt += "]";
+          while (opens-- > 0) attempt += "}";
+          try { parsed = JSON.parse(attempt); } catch(e3) {}
+        }
+      }
     }
 
-    // Build colorful rating grid
     const RATING_ROWS = [
-      { key: "STRONG",      label: "Strong",      color: "#7ABF3A", bg: "rgba(122,191,58,0.06)",  border: "rgba(122,191,58,0.3)"  },
-      { key: "MODERATE",    label: "Moderate",    color: "#E8A838", bg: "rgba(232,168,56,0.06)",  border: "rgba(232,168,56,0.3)"  },
-      { key: "NEEDS WORK",  label: "Needs Work",  color: "#D95B5B", bg: "rgba(217,91,91,0.06)",   border: "rgba(217,91,91,0.3)"   },
+      { key: "STRONG",     label: "Strong",     color: "#7ABF3A", bg: "rgba(122,191,58,0.05)",  border: "rgba(122,191,58,0.25)"  },
+      { key: "OK",         label: "OK",         color: "#999999", bg: "rgba(150,150,150,0.05)", border: "rgba(150,150,150,0.2)"  },
+      { key: "NEEDS WORK", label: "Needs Work", color: "#D95B5B", bg: "rgba(217,91,91,0.05)",  border: "rgba(217,91,91,0.25)"   },
     ];
 
     // Sort days farthest→closest
-    const grid = (parsed.grid || []).sort((a, b) => {
-      const n = x => parseInt(x.day?.replace("d","") || 0);
-      return n(b) - n(a);
+    const days = (parsed.days || []).sort((a, b) => {
+      return parseInt(b.day?.replace("d","") || 0) - parseInt(a.day?.replace("d","") || 0);
     });
 
-    const colW = grid.length > 0 ? Math.floor(100 / grid.length) : 100;
+    // Collect all unique element names
+    const allElements = {};
+    days.forEach(dayObj => {
+      (dayObj.elements || []).forEach(el => {
+        if (!allElements[el.name]) allElements[el.name] = el.category;
+      });
+    });
 
     let html = `<div style="overflow-x:auto;">`;
 
-    // Header row — day labels
-    html += `<div style="display:flex;margin-left:80px;margin-bottom:4px;">`;
-    grid.forEach(dayObj => {
-      html += `<div style="flex:1;text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;font-weight:700;letter-spacing:1px;">${dayObj.day}</div>`;
+    // Column header row
+    const labelW = 110;
+    html += `<div style="display:flex;margin-left:${labelW}px;margin-bottom:6px;">`;
+    days.forEach(dayObj => {
+      html += `<div style="flex:1;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:#3A9A9A;font-weight:700;letter-spacing:1px;">${dayObj.day}</div>`;
     });
     html += `</div>`;
 
-    // Rating rows
+    // One rating group per row type
     RATING_ROWS.forEach(row => {
-      html += `<div style="display:flex;align-items:stretch;margin-bottom:6px;border:1px solid ${row.border};border-radius:8px;overflow:hidden;background:${row.bg};">`;
-      // Row label
-      html += `<div style="width:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:10px 4px;border-right:1px solid ${row.border};background:${row.color}18;">
-        <span style="font-family:'DM Mono',monospace;font-size:8px;font-weight:700;color:${row.color};letter-spacing:1px;text-transform:uppercase;text-align:center;line-height:1.3;">${row.label}</span>
-      </div>`;
-      // Day cells
-      grid.forEach(dayObj => {
-        const matching = (dayObj.ratings || []).filter(r => r.rating === row.key);
-        html += `<div style="flex:1;min-height:60px;border-right:1px dashed ${row.border};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px;">`;
-        if (matching.length === 0) {
-          html += `<div style="width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.08);"></div>`;
-        } else {
-          matching.forEach(r => {
-            const cat = r.category?.toLowerCase();
-            const color = catColor(cat);
-            const icon = CATEGORIES[cat]?.icon || "·";
-            const label = CATEGORIES[cat]?.label || cat;
-            html += `<div title="${label}: ${r.note||""}" style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-              <div style="width:20px;height:20px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:9px;color:white;box-shadow:0 1px 4px ${color}66;">${icon}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:7px;color:${color};text-align:center;max-width:36px;line-height:1.2;">${r.note||""}</div>
+      // Find elements that appear in this rating bucket for any day
+      const relevantElements = Object.keys(allElements).filter(elName =>
+        days.some(dayObj => (dayObj.elements||[]).some(el => el.name === elName && el.rating === row.key))
+      );
+      if (!relevantElements.length) return;
+
+      // Group header
+      html += `<div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${row.color};letter-spacing:2px;text-transform:uppercase;margin:12px 0 4px;padding:4px 8px;background:${row.bg};border-left:3px solid ${row.color};border-radius:0 4px 4px 0;">${row.label}</div>`;
+
+      // One row per element in this rating
+      relevantElements.forEach(elName => {
+        const cat = allElements[elName];
+        const color = catColor(cat);
+        const icon = CATEGORIES[cat]?.icon || "·";
+
+        html += `<div style="display:flex;align-items:center;margin-bottom:4px;border:1px solid ${row.border};border-radius:6px;overflow:hidden;background:${row.bg};">`;
+        // Element label
+        html += `<div style="width:${labelW}px;flex-shrink:0;padding:6px 8px;border-right:1px solid ${row.border};display:flex;align-items:center;gap:5px;">
+          <div style="width:14px;height:14px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:7px;color:white;flex-shrink:0;">${icon}</div>
+          <span style="font-family:'DM Mono',monospace;font-size:8px;color:#444;line-height:1.3;">${elName}</span>
+        </div>`;
+        // Day cells
+        days.forEach(dayObj => {
+          const match = (dayObj.elements||[]).find(el => el.name === elName && el.rating === row.key);
+          html += `<div style="flex:1;min-height:44px;border-right:1px dashed ${row.border};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;">`;
+          if (match) {
+            html += `<div title="${match.note||""}" style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="width:16px;height:16px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:8px;color:white;box-shadow:0 1px 3px ${color}66;">${icon}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:6px;color:#777;text-align:center;max-width:40px;line-height:1.2;">${(match.note||"").slice(0,20)}</div>
             </div>`;
-          });
-        }
+          } else {
+            html += `<div style="width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,0.07);"></div>`;
+          }
+          html += `</div>`;
+        });
         html += `</div>`;
       });
-      html += `</div>`;
     });
 
     // Legend
-    html += `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);">`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);">`;
     selectedCats.forEach(cat => {
       html += `<div style="display:flex;align-items:center;gap:4px;">
         <div style="width:12px;height:12px;border-radius:50%;background:${catColor(cat)};display:flex;align-items:center;justify-content:center;font-size:6px;color:white;">${CATEGORIES[cat]?.icon||"·"}</div>
@@ -1986,7 +2021,7 @@ ${eventBlocks}`;
     });
     html += `</div></div>`;
 
-    if (!parsed.grid?.length) html = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">Not enough data to build rating grid yet.</div>`;
+    if (!days.length) html = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;">Not enough data to build grid yet — log more entries in the days before your focal events.</div>`;
     document.getElementById("analysisBody").innerHTML = html;
     document.getElementById("analysisCard").style.display = "block";
     // Fire commonality analysis async (non-blocking)
@@ -2721,7 +2756,7 @@ async function generateCategoryReport(cat) {
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ contents:[{parts:[{text: cfg.prompt(catEntries, aof)}]}], generationConfig:{maxOutputTokens:4000} })
+      body: JSON.stringify({ contents:[{parts:[{text: cfg.prompt(catEntries, aof)}]}], generationConfig:{maxOutputTokens:6000} })
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2729,7 +2764,18 @@ async function generateCategoryReport(cat) {
     let report;
     try { report = JSON.parse(clean); } catch(pe) {
       const m = clean.match(/\{[\s\S]*\}/);
-      if (m) try { report = JSON.parse(m[0]); } catch(e2) {}
+      if (m) {
+        let attempt = m[0];
+        try { report = JSON.parse(attempt); } catch(e2) {
+          // Close truncated JSON
+          if ((attempt.match(/"/g)||[]).length % 2 !== 0) attempt += '"';
+          let opens = (attempt.match(/\{/g)||[]).length - (attempt.match(/\}/g)||[]).length;
+          let arrOpens = (attempt.match(/\[/g)||[]).length - (attempt.match(/\]/g)||[]).length;
+          while (arrOpens-- > 0) attempt += "]";
+          while (opens-- > 0) attempt += "}";
+          try { report = JSON.parse(attempt); } catch(e3) {}
+        }
+      }
     }
     if (!report) throw new Error("Could not parse response");
     body.innerHTML = renderRatingReport(report, cfg.color);
@@ -2807,7 +2853,7 @@ ${eventBlocks}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{ maxOutputTokens:4000 } })
+      body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:6000} })
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2815,7 +2861,17 @@ ${eventBlocks}`;
     let report;
     try { report = JSON.parse(clean); } catch(pe) {
       const m = clean.match(/\{[\s\S]*\}/);
-      if (m) try { report = JSON.parse(m[0]); } catch(e2) {}
+      if (m) {
+        let attempt = m[0];
+        try { report = JSON.parse(attempt); } catch(e2) {
+          if ((attempt.match(/"/g)||[]).length % 2 !== 0) attempt += '"';
+          let opens = (attempt.match(/\{/g)||[]).length - (attempt.match(/\}/g)||[]).length;
+          let arrOpens = (attempt.match(/\[/g)||[]).length - (attempt.match(/\]/g)||[]).length;
+          while (arrOpens-- > 0) attempt += "]";
+          while (opens-- > 0) attempt += "}";
+          try { report = JSON.parse(attempt); } catch(e3) {}
+        }
+      }
     }
     if (!report) throw new Error("Could not parse response");
     body.innerHTML = renderRatingReport(report, "#7CBFBF");
@@ -2856,12 +2912,14 @@ function renderRatingReport(report, accentColor) {
         <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${cat.ratingColor};background:${cat.ratingColor}18;padding:3px 8px;border-radius:4px;letter-spacing:1px;">${icon} ${cat.rating}</div>
       </div>`;
     if (cat.observations?.length) {
+      const obs = Array.isArray(cat.observations) ? cat.observations : [cat.observations];
       html += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">Observed</div>`;
-      cat.observations.forEach(o => { html += `<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:${cat.color};flex-shrink:0;">·</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:1.5;">${o}</span></div>`; });
+      obs.forEach(o => { html += `<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:${cat.color};flex-shrink:0;">·</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:1.5;">${o}</span></div>`; });
     }
     if (cat.recommendations?.length) {
+      const recs = Array.isArray(cat.recommendations) ? cat.recommendations : [cat.recommendations];
       html += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#888;letter-spacing:1px;text-transform:uppercase;margin:10px 0 5px;">Recommendations</div>`;
-      cat.recommendations.forEach(r => { html += `<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:${cat.ratingColor};flex-shrink:0;font-weight:700;">→</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;line-height:1.5;">${r}</span></div>`; });
+      recs.forEach(r => { html += `<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:${cat.ratingColor};flex-shrink:0;font-weight:700;">→</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;line-height:1.5;">${r}</span></div>`; });
     }
     html += `</div>`;
   });

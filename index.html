@@ -62,7 +62,7 @@
   .tab.active { background: #7ABF3A; color: #fff; border-color: #7ABF3A; }
   .tab-patterns { width: 100%; text-align: center; background: #3A9A9A !important; color: white !important; border-color: #3A9A9A !important; font-size: 13px !important; letter-spacing: 2px !important; padding: 14px !important; }
   .tab-patterns.active { background: #7ABF3A !important; border-color: #7ABF3A !important; }
-  .tab-behavioral { width: 100%; text-align: center; background: #5B7FA6 !important; color: white !important; border-color: #5B7FA6 !important; font-size: 13px !important; letter-spacing: 2px !important; padding: 14px !important; }
+  .tab-behavioral { width: 100%; text-align: center; background: #3A9A9A !important; color: white !important; border-color: #3A9A9A !important; font-size: 13px !important; letter-spacing: 2px !important; padding: 14px !important; }
   .tab-behavioral.active { background: #7ABF3A !important; border-color: #7ABF3A !important; }
   /* Foundation sub-tabs */
   .sub-tabs { display: flex; gap: 3px; margin-bottom: 16px; }
@@ -231,11 +231,11 @@
 </div>
 
 <div class="tabs">
-  <button class="tab tab-patterns mono" onclick="showTab('analyze')" id="tabPatterns">Pattern Discovery</button>
-  <button class="tab tab-behavioral mono" onclick="showTab('behavioral')" id="tabBehavioral">Behavioral Analysis</button>
+  <button class="tab tab-patterns active mono" onclick="showTab('log')" style="width:100%;text-align:center;letter-spacing:2px;padding:14px;">Log Entries</button>
+  <button class="tab tab-patterns mono" onclick="showTab('foundation')" style="width:100%;text-align:center;letter-spacing:2px;padding:14px;">Foundation</button>
   <div class="tab-row-bottom">
-    <button class="tab mono" onclick="showTab('foundation')">Foundation</button>
-    <button class="tab active mono" onclick="showTab('log')">Log Entries</button>
+    <button class="tab tab-behavioral mono" onclick="showTab('behavioral')" id="tabBehavioral">Behavioral Analysis</button>
+    <button class="tab tab-patterns mono" onclick="showTab('analyze')" id="tabPatterns">Pattern Discovery</button>
   </div>
 </div>
 

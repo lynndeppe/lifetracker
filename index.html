@@ -1836,10 +1836,10 @@ async function runAnalysis() {
   const bounds = getRangeBounds();
   const b = bounds[selectedRange];
   const m = RANGE_META[selectedRange];
-  // Get up to 10 most recent scored events matching the range
+  // Use 3 most recent scored events to keep prompt small
   const focalEvents = entries
     .filter(e => { const t = getTotalScore(e); return t !== null && t > b.min && t <= b.max; })
-    .slice(0, 10);
+    .slice(0, 3);
   if (!focalEvents.length) {
     showToast(`No ${m.label} range events found. Log and score more activities first.`);
     return;
@@ -1860,55 +1860,26 @@ async function runAnalysis() {
   const eventBlocks = focalEvents.map((focal, idx) => {
     const windowStart = focal.ts - daysBack * 86400000;
     const totalScore = getTotalScore(focal);
-    const focalScores = focal.scores ? Object.entries(focal.scores).map(([k,v]) => `${k}: ${v}/5`).join(", ") : "no scores";
-
-    // Build day-by-day breakdown
-    let dayLines = `EVENT ${idx+1} [${new Date(focal.ts).toLocaleDateString([],{month:"short",day:"numeric"})}] Score:${totalScore}/20\n`;
+    let dayLines = `E${idx+1} score:${totalScore}/20\n`;
     for (let d = daysBack; d >= 1; d--) {
       const dayStart = focal.ts - d * 86400000;
       const dayEnd = focal.ts - (d-1) * 86400000;
-      const dayEntries = entries.filter(e => {
-        if (!selectedCats.includes(e.category)) return false;
-        if (e.ts < dayStart || e.ts >= dayEnd) return false;
-        return true;
-      });
+      const dayEntries = entries
+        .filter(e => selectedCats.includes(e.category) && e.ts >= dayStart && e.ts < dayEnd)
+        .slice(0, 4); // max 4 entries per day
       if (dayEntries.length) {
-        dayLines += `  d${d}: ` + dayEntries.map(e => `[${CATEGORIES[e.category]?.label||e.category}] ${e.note}`).join(" | ") + "\n";
-      } else {
-        dayLines += `  d${d}: (no entries)\n`;
+        dayLines += `  d${d}: ` + dayEntries.map(e => `[${e.category}] ${(e.note||"").slice(0,60)}`).join(" | ") + "\n";
       }
     }
     return dayLines;
   }).join("\n\n---\n\n");
 
   const aof = getAreaOfFocus();
-  const prompt = `You are a human performance analyst. Analyze the behavioral data logged in the ${daysBack} days before each of ${focalEvents.length} "${m.label}" performance events.
+  const prompt = `Rate these behavioral elements per day as OK, STRONG, or NEEDS WORK. Only rate elements with actual data. Return ONLY JSON:
+{"days":[{"day":"d1","elements":[{"name":"Last food before bed","category":"sleep","rating":"OK","note":"pizza 10pm"},{"name":"Meal quality","category":"food","rating":"STRONG","note":"clean meals"}]}]}
 
-For each day (d1 = day immediately before the event, d2 = two days before, etc.) rate EACH of the following specific behavioral elements as exactly: OK, NEEDS WORK, or STRONG.
-
-Elements to rate per day:
-SLEEP: "Last food/drink before bed", "Bedtime consistency", "Wake time & duration", "HRV/recovery quality"
-STRESS: "Morning stress", "Afternoon stress", "Evening stress"
-ADD-ONS: "Add-on impact${aof ? ` on ${aof}` : ""}"
-FOOD: "Meal quality", "Hydration"
-${aof ? `Consider the user's area of focus: "${aof}" when rating impacts.` : ""}
-
-Only include elements where actual log entries exist for that day. Skip elements with no data.
-
-Respond ONLY as valid JSON, no other text:
-{
-  "days": [
-    {
-      "day": "d${daysBack}",
-      "elements": [
-        { "name": "Last food/drink before bed", "category": "sleep", "rating": "OK", "note": "ate at 10pm" },
-        { "name": "Morning stress", "category": "stress", "rating": "STRONG", "note": "calm morning" }
-      ]
-    }
-  ]
-}
-
-Include a "days" entry for each of the ${daysBack} days (d${daysBack} through d1), farthest first.
+Elements: sleep=["Last food before bed","Bedtime","Wake time","HRV"], stress=["Morning stress","Afternoon stress","Evening stress"], substance=["Add-on impact${aof ? ` on ${aof}` : ""}"], food=["Meal quality","Hydration"]
+Days: d${daysBack} (farthest) to d1 (closest). ${aof ? `Focus: "${aof}".` : ""}
 
 DATA:
 ${eventBlocks}`;
@@ -1916,7 +1887,7 @@ ${eventBlocks}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 3000 } }),
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1000 } }),
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";

@@ -279,7 +279,7 @@
 
       <!-- Exercise scores (hidden unless exercise selected) -->
       <div class="scores-card" id="scoresCard" style="display:none">
-        <div class="scores-title mono">Rate This RPE <span onclick="document.getElementById('rpeModal').style.display='flex'" style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#3A9A9A;color:white;font-size:8px;cursor:pointer;margin-left:4px;font-family:'DM Mono',monospace;vertical-align:middle;">i</span></div>
+        <div class="scores-title mono">Rate This Experience</div>
         <div id="scoreRows"></div>
       </div>
 
@@ -716,7 +716,7 @@ const CATEGORIES = {
   exercise:   { label: "Focal Events",      icon: "▲", color: "#7CBFBF" },
   supplement: { label: "Supplement",        icon: "◉", color: "#3A9A9A" },
 };
-const METRICS = ["Strength", "Endurance", "Mental State", "Recovery Feel"];
+const METRICS = ["Strength", "RPE", "Mental State", "Recovery Feel"];
 
 let entries = [];
 let supplements = [];
@@ -1330,7 +1330,7 @@ function selectCat(key) {
 function buildScoreRows() {
   document.getElementById("scoreRows").innerHTML = METRICS.map(m => `
     <div class="score-row">
-      <span class="score-label">${m}</span>
+      <span class="score-label">${m}${m==="RPE"?` <span onclick="document.getElementById('rpeModal').style.display='flex'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#3A9A9A;color:white;font-size:7px;cursor:pointer;vertical-align:middle;">i</span>`:""}</span>
       <div class="score-btns">
         ${[1,2,3,4,5].map(v => `
           <button class="score-btn ${exerciseScores[m]===v?'selected':''}" onclick="setScore('${m}',${v})">${v}</button>
@@ -1548,7 +1548,7 @@ function entryHTML(e, showDelete) {
       ${hasScores ? "✎ Edit Scores" : "+ Rate Experience"}
     </button>
     <div id="entry-score-panel-${e.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.08);">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this RPE <span onclick="document.getElementById('rpeModal').style.display='flex'" style="display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;background:#3A9A9A;color:white;font-size:7px;cursor:pointer;margin-left:3px;font-family:'DM Mono',monospace;vertical-align:middle;">i</span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this experience</div>
       ${METRICS.map(m => `
         <div style="margin-bottom:8px;">
           <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}</div>
@@ -3061,7 +3061,7 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
     const showPanel = openScoreActivityId === a.id;
     const scorePanel = showPanel ? `
       <div id="strava-score-panel-${a.id}" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.08);">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this RPE <span onclick="document.getElementById('rpeModal').style.display='flex'" style="display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;background:#3A9A9A;color:white;font-size:7px;cursor:pointer;margin-left:3px;font-family:'DM Mono',monospace;vertical-align:middle;">i</span></div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this experience</div>
         ${METRICS.map(m => `
           <div style="margin-bottom:8px;">
             <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}</div>
@@ -3092,7 +3092,10 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">${stats}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-          ${!showPanel ? `<button id="strava-save-${a.id}" onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>` : ""}
+          ${!showPanel ? (stravaImportedIds.has(a.id)
+            ? `<button id="strava-save-${a.id}" disabled style="padding:6px 10px;background:#7ABF3A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;opacity:0.8;">Imported ✓</button>`
+            : `<button id="strava-save-${a.id}" onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>`
+          ) : ""}
           <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
         </div>
       </div>
@@ -3105,6 +3108,7 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
 // Track strava scores being set inline
 const stravaScoreTemp = {};
 const stravaImported = new Set();
+const stravaImportedIds = new Set(); // persists across re-renders
 function setStravaScore(activityId, metric, val) {
   if (!stravaScoreTemp[activityId]) stravaScoreTemp[activityId] = {};
   stravaScoreTemp[activityId][metric] = val;
@@ -3164,8 +3168,9 @@ function stravaImportAsFocalEvent(activityId) {
   saveEntries();
 
   // Toggle button label to Imported
+  stravaImportedIds.add(activityId);
   const saveBtn = document.getElementById(`strava-save-${activityId}`);
-  if (saveBtn) saveBtn.textContent = "Imported";
+  if (saveBtn) { saveBtn.textContent = "Imported ✓"; saveBtn.disabled = true; saveBtn.style.background = "#7ABF3A"; }
 
   // Re-render activities with score panel open for this one
   const allCached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");

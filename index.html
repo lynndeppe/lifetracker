@@ -1819,7 +1819,7 @@ ${eventBlocks}`;
     try {
       resp = await fetch(WORKER + "?service=gemini", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:1500,thinkingConfig:{thinkingBudget:0}} }),
+        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:1500} }),
         signal: controller.signal
       });
     } finally { clearTimeout(tid); }
@@ -2008,7 +2008,7 @@ ${dayBlocks.join("\n\n")}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000, thinkingConfig: { thinkingBudget: 0 } } }),
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 2000 } }),
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2190,7 +2190,7 @@ async function toggleSuppReportPreview() {
     try {
       const resp = await fetch(WORKER + "?service=gemini", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:600,thinkingConfig:{thinkingBudget:0}} })
+        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:600} })
       });
       const data = await resp.json();
       const raw = (data?.candidates?.[0]?.content?.parts?.[0]?.text || "").replace(/```json|```/g,"").trim();
@@ -2319,7 +2319,7 @@ Be factual, concise, and science-based. Do not recommend purchasing anything.`;
         contents: [{
           parts: [{ text: prompt }]
         }],
-        generationConfig: { maxOutputTokens: 4000, thinkingConfig: { thinkingBudget: 0 } }
+        generationConfig: { maxOutputTokens: 4000 }
       })
     });
     const raw = await res.text();
@@ -2450,7 +2450,7 @@ ${entryLines}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000, thinkingConfig: { thinkingBudget: 0 } } }),
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4000 } }),
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2665,7 +2665,7 @@ async function generateCategoryReport(cat) {
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ contents:[{parts:[{text: cfg.prompt(catEntries, aof)}]}], generationConfig:{maxOutputTokens:4000,thinkingConfig:{thinkingBudget:0}} })
+      body: JSON.stringify({ contents:[{parts:[{text: cfg.prompt(catEntries, aof)}]}], generationConfig:{maxOutputTokens:4000} })
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2762,7 +2762,7 @@ ${eventBlocks}`;
   try {
     const resp = await fetch(WORKER + "?service=gemini", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:4000,thinkingConfig:{thinkingBudget:0}} })
+      body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:4000} })
     });
     const data = await resp.json();
     const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";

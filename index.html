@@ -636,7 +636,7 @@
       </div>
 
       <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;margin-bottom:4px;">Scoring Focal Events</div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;">Rate four dimensions 1–5: <strong>Strength</strong> · <strong>RPE</strong> (tap ⓘ for scale) · <strong>Mental State</strong> · <strong>Recovery Feel</strong>. Total score 4–20 is matched against your experience ranges.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;">Rate four dimensions 1–5: <strong>Strength</strong> · <strong>Endurance</strong> · <strong>Mental State</strong> · <strong>Recovery Feel</strong>. Total score 4–20 is matched against your experience ranges.</div>
     </div>
 
     <!-- Section 4 -->
@@ -849,7 +849,7 @@ const CATEGORIES = {
   exercise:   { label: "Focal Events",      icon: "▲", color: "#7CBFBF" },
   supplement: { label: "Supplement",        icon: "◉", color: "#3A9A9A" },
 };
-const METRICS = ["Strength", "RPE", "Mental State", "Recovery Feel"];
+const METRICS = ["Strength", "Endurance", "Mental State", "Recovery Feel"];
 
 let entries = [];
 let supplements = [];
@@ -1497,7 +1497,7 @@ function selectCat(key) {
 function buildScoreRows() {
   document.getElementById("scoreRows").innerHTML = METRICS.map(m => `
     <div class="score-row">
-      <span class="score-label">${m}${m==="RPE"?` <span onclick="document.getElementById('rpeModal').style.display='flex'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#3A9A9A;color:white;font-size:7px;cursor:pointer;vertical-align:middle;">i</span>`:""}</span>
+      <span class="score-label">${m}</span>
       <div class="score-btns">
         ${[1,2,3,4,5].map(v => `
           <button class="score-btn ${exerciseScores[m]===v?'selected':''}" onclick="setScore('${m}',${v})">${v}</button>
@@ -1718,7 +1718,7 @@ function entryHTML(e, showDelete) {
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this experience</div>
       ${METRICS.map(m => `
         <div style="margin-bottom:8px;">
-          <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}${m==="RPE" ? ` <span onclick="document.getElementById('rpeModal').style.display='flex'" style="display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;background:#3A9A9A;color:white;font-size:7px;cursor:pointer;vertical-align:middle;">i</span>` : ""}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}</div>
           <div style="display:flex;gap:4px;">
             ${[1,2,3,4,5].map(v => `
               <button id="entry-score-${e.id}-${m.replace(/ /g,'_')}-${v}"
@@ -3192,7 +3192,7 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
         <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this experience</div>
         ${METRICS.map(m => `
           <div style="margin-bottom:8px;">
-            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}${m==="RPE" ? ` <span onclick="document.getElementById('rpeModal').style.display='flex'" style="display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;background:#3A9A9A;color:white;font-size:7px;cursor:pointer;vertical-align:middle;">i</span>` : ""}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}</div>
             <div style="display:flex;gap:4px;">
               ${[1,2,3,4,5].map(v => `
                 <button id="strava-score-${a.id}-${m.replace(/ /g,'_')}-${v}"

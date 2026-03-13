@@ -243,7 +243,12 @@
 <div class="content" id="tab-log">
   <div class="cat-grid" id="catGrid"></div>
 
-  <!-- Supplement panel (shown when supplement category selected) -->
+  <!-- Supplement quick-log panel (shown when Log Today's Doses selected) -->
+  <div id="suppLogPanel" style="display:none;margin-bottom:14px;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Log Today's Doses</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:14px;line-height:1.6;">Check the supplements you took today and tap Log Selected to record a timestamped entry. Manage your stack in Foundation → Supplements.</div>
+    <div id="suppQuickListLog"></div>
+  </div>
 
   <div id="voiceError" style="display:none" class="error-banner"></div>
 
@@ -847,7 +852,7 @@ const CATEGORIES = {
   stress:     { label: "Stress & Mental",   icon: "◎", color: "#BF9C7C" },
   substance:  { label: "Add-Ons",           icon: "◈", color: "#BF7C9C" },
   exercise:   { label: "Focal Events",      icon: "▲", color: "#7CBFBF" },
-  supplement: { label: "Supplement",        icon: "◉", color: "#3A9A9A" },
+  supplement: { label: "Log Today's Doses", icon: "◉", color: "#3A9A9A" },
 };
 const METRICS = ["Strength", "Endurance", "Mental State", "Recovery Feel"];
 
@@ -1346,10 +1351,10 @@ function logCheckedSupplements() {
 }
 
 function renderSuppQuickLog() {
-  const el = document.getElementById("suppQuickList");
+  const el = document.getElementById("suppQuickListLog") || document.getElementById("suppQuickList");
   if (!el) return;
   if (!supplements.length) {
-    el.innerHTML = '<div style="font-size:13px;color:#555;font-family:\'DM Mono\',monospace;padding:8px 0;">No supplements saved yet. Use Scan or Search above to add them.</div>';
+    el.innerHTML = '<div style="font-size:13px;color:#555;font-family:\'DM Mono\',monospace;padding:8px 0;">No supplements saved yet. Add them in Foundation → Supplements.</div>';
     return;
   }
 
@@ -1490,6 +1495,12 @@ function selectCat(key) {
     border.style.padding = "16px 14px 14px";
   }
   if (key === "exercise") { stravaCheckToken(); buildScoreRows(); }
+  // Show supplement quick-log panel, hide main entry form
+  const isSupplement = key === "supplement";
+  document.getElementById("suppLogPanel").style.display = isSupplement ? "block" : "none";
+  document.getElementById("manualEntryBox").style.display = isSupplement ? "none" : "block";
+  document.getElementById("recentSection").style.display = "none";
+  if (isSupplement) { renderSuppQuickLog(); return; }
   updateUI();
 }
 

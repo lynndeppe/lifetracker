@@ -243,11 +243,10 @@
 <div class="content" id="tab-log">
   <div class="cat-grid" id="catGrid"></div>
 
-  <!-- Supplement quick-log panel (shown when Log Today's Doses selected) -->
-  <div id="suppLogPanel" style="display:none;margin-bottom:14px;">
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Log Today's Doses</div>
-    <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:14px;line-height:1.6;">Check the supplements you took today and tap Log Selected to record a timestamped entry. Manage your stack in Foundation → Supplements.</div>
-    <div id="suppQuickListLog"></div>
+  <!-- Supplements Logged panel (shown when Supplements Logged selected) -->
+  <div id="suppLoggedPanel" style="display:none;margin-bottom:14px;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Supplements Logged Today</div>
+    <div id="suppLoggedList"></div>
   </div>
 
   <div id="voiceError" style="display:none" class="error-banner"></div>
@@ -852,7 +851,7 @@ const CATEGORIES = {
   stress:     { label: "Stress & Mental",   icon: "◎", color: "#BF9C7C" },
   substance:  { label: "Add-Ons",           icon: "◈", color: "#BF7C9C" },
   exercise:   { label: "Focal Events",      icon: "▲", color: "#7CBFBF" },
-  supplement: { label: "Log Today's Doses", icon: "◉", color: "#3A9A9A" },
+  supplement: { label: "Supplements Logged", icon: "◉", color: "#3A9A9A" },
 };
 const METRICS = ["Strength", "Endurance", "Mental State", "Recovery Feel"];
 
@@ -1350,11 +1349,86 @@ function logCheckedSupplements() {
   }
 }
 
+function renderSuppLoggedToday() {
+  const el = document.getElementById("suppLoggedList");
+  if (!el) return;
+
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const todayEnd   = new Date(); todayEnd.setHours(23,59,59,999);
+
+  // All supplement entries logged today
+  const todayEntries = entries.filter(e =>
+    e.category === "supplement" &&
+    e.ts >= todayStart.getTime() && e.ts <= todayEnd.getTime()
+  ).sort((a, b) => b.ts - a.ts);
+
+  // Daily supplements (includeDaily ON) — show with status
+  const dailySupps = supplements.filter(s => s.includeDaily);
+
+  if (!dailySupps.length && !todayEntries.length) {
+    el.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:12px;color:#777;padding:12px 0;">No supplements marked as daily and none logged yet today.<br><span style="font-size:10px;">Manage your stack in Foundation → Supplements.</span></div>`;
+    return;
+  }
+
+  const fmt = ts => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  // Build rows for daily supplements showing logged/not-yet status
+  let html = "";
+
+  if (dailySupps.length) {
+    html += `<div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:#777;text-transform:uppercase;margin-bottom:8px;">Daily Supplements</div>`;
+    dailySupps.forEach(s => {
+      const logged = todayEntries.filter(e => e.note && e.note.startsWith(s.name));
+      const isLogged = logged.length > 0;
+      const timeStr = isLogged ? logged.map(e => fmt(e.ts)).join(", ") : "";
+      const autoTag = isLogged && logged.some(e => e.autoLogged)
+        ? `<span style="font-family:'DM Mono',monospace;font-size:8px;background:rgba(58,154,154,0.15);color:#3A9A9A;padding:1px 5px;border-radius:3px;letter-spacing:1px;margin-left:6px;vertical-align:middle;">AUTO</span>` : "";
+      html += `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${isLogged ? "rgba(58,154,154,0.06)" : "rgba(0,0,0,0.04)"};border:1px solid ${isLogged ? "rgba(58,154,154,0.25)" : "rgba(0,0,0,0.1)"};border-radius:6px;margin-bottom:7px;">
+          <div style="width:22px;height:22px;border-radius:50%;background:${isLogged ? "#3A9A9A" : "rgba(0,0,0,0.12)"};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="color:white;font-size:12px;line-height:1;">${isLogged ? "✓" : "·"}</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;color:#111;font-weight:500;">${s.name}${autoTag}</div>
+            ${s.dose || s.qty ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;margin-top:1px;">${[s.qty && s.qty !== "1" ? s.qty + "×" : "", s.dose].filter(Boolean).join(" ")}</div>` : ""}
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:${isLogged ? "#3A9A9A" : "#aaa"};text-align:right;flex-shrink:0;">
+            ${isLogged ? timeStr : "not yet"}
+          </div>
+        </div>`;
+    });
+  }
+
+  // Any manually logged supplement entries not matched to a daily supp
+  const dailyNames = new Set(dailySupps.map(s => s.name));
+  const manualEntries = todayEntries.filter(e => !dailyNames.has((e.note || "").split(/[\s—\-]/)[0].trim()) && !e.autoLogged);
+
+  if (manualEntries.length) {
+    html += `<div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:#777;text-transform:uppercase;margin:14px 0 8px;">Also Logged Today</div>`;
+    manualEntries.forEach(e => {
+      html += `
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-radius:6px;margin-bottom:6px;">
+          <div style="width:22px;height:22px;border-radius:50%;background:#3A9A9A;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="color:white;font-size:12px;line-height:1;">✓</span>
+          </div>
+          <div style="flex:1;font-size:12px;color:#333;">${e.note || "supplement"}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;flex-shrink:0;">${fmt(e.ts)}</div>
+        </div>`;
+    });
+  }
+
+  if (!todayEntries.length && dailySupps.length) {
+    html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;margin-top:8px;">None logged yet today — log doses in Foundation → Supplements.</div>`;
+  }
+
+  el.innerHTML = html;
+}
+
 function renderSuppQuickLog() {
-  const el = document.getElementById("suppQuickListLog") || document.getElementById("suppQuickList");
+  const el = document.getElementById("suppQuickList");
   if (!el) return;
   if (!supplements.length) {
-    el.innerHTML = '<div style="font-size:13px;color:#555;font-family:\'DM Mono\',monospace;padding:8px 0;">No supplements saved yet. Add them in Foundation → Supplements.</div>';
+    el.innerHTML = '<div style="font-size:13px;color:#555;font-family:\'DM Mono\',monospace;padding:8px 0;">No supplements saved yet. Use Scan or Search above to add them.</div>';
     return;
   }
 
@@ -1495,12 +1569,11 @@ function selectCat(key) {
     border.style.padding = "16px 14px 14px";
   }
   if (key === "exercise") { stravaCheckToken(); buildScoreRows(); }
-  // Show supplement quick-log panel, hide main entry form
+  // Supplement tile: show read-only today summary, hide entry form
   const isSupplement = key === "supplement";
-  document.getElementById("suppLogPanel").style.display = isSupplement ? "block" : "none";
+  document.getElementById("suppLoggedPanel").style.display = isSupplement ? "block" : "none";
   document.getElementById("manualEntryBox").style.display = isSupplement ? "none" : "block";
-  document.getElementById("recentSection").style.display = "none";
-  if (isSupplement) { renderSuppQuickLog(); return; }
+  if (isSupplement) { renderSuppLoggedToday(); document.getElementById("recentSection").style.display = "none"; return; }
   updateUI();
 }
 

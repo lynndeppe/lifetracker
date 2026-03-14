@@ -291,6 +291,11 @@
         <div id="scoreRows"></div>
       </div>
 
+      <div class="scores-card" id="substanceScoresCard" style="display:none;background:#F0EEEB;border-radius:8px;padding:14px 12px;margin-bottom:12px;">
+        <div class="scores-title mono" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#BF7C9C;text-transform:uppercase;font-weight:700;margin-bottom:12px;">Rate Your Recovery</div>
+        <div id="substanceScoreRows"></div>
+      </div>
+
       <button class="save-btn mono" id="saveBtn" onclick="saveEntry()">Save Entry</button>
     </div>
   </div>
@@ -446,7 +451,7 @@
 
     <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
       <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Define Event Experience</div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Total must not exceed 20 &nbsp;|&nbsp; Remaining: <span id="rangeRemaining" style="color:#111;font-weight:600;">6</span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Total must not exceed 15 &nbsp;|&nbsp; Remaining: <span id="rangeRemaining" style="color:#111;font-weight:600;">0</span></div>
 
       <!-- Unified bar with three draggable segments -->
       <div style="margin-bottom:20px;">
@@ -455,17 +460,17 @@
         <div style="display:flex;margin-bottom:8px;">
           <div id="okLabel" style="display:flex;flex-direction:column;align-items:center;">
             <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;font-weight:600;">OK</span>
-            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="okVal">1–7</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="okVal">1–5</span>
           </div>
           <div style="flex:1;"></div>
           <div id="goodLabel" style="display:flex;flex-direction:column;align-items:center;">
             <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#8BAF7C;text-transform:uppercase;font-weight:600;">Good</span>
-            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="goodVal">8–14</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="goodVal">6–10</span>
           </div>
           <div style="flex:1;"></div>
           <div id="strongLabel" style="display:flex;flex-direction:column;align-items:center;">
             <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#7CBFBF;text-transform:uppercase;font-weight:600;">Strong</span>
-            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="strongVal">15–20</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="strongVal">11–15</span>
           </div>
         </div>
 
@@ -487,13 +492,13 @@
         <!-- Scale labels -->
         <div style="display:flex;justify-content:space-between;margin-top:4px;">
           <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">0</span>
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">20</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">15</span>
         </div>
 
         <!-- Hidden inputs kept for save/load compatibility -->
-        <input type="hidden" id="okSlider" value="7">
-        <input type="hidden" id="goodSlider" value="7">
-        <input type="hidden" id="strongSlider" value="6">
+        <input type="hidden" id="okSlider" value="5">
+        <input type="hidden" id="goodSlider" value="5">
+        <input type="hidden" id="strongSlider" value="5">
       </div>
 
       <button onclick="saveRanges()" style="width:100%;padding:11px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Save Ranges</button>
@@ -539,7 +544,7 @@
           </label>
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
             <input type="checkbox" id="chk-substance" checked style="width:18px;height:18px;accent-color:#BF7C9C;" />
-            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#BF7C9C;">Add-Ons</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#BF7C9C;">Recovery Model</span>
           </label>
         </div>
       </div>
@@ -635,11 +640,11 @@
         <div style="background:rgba(124,156,191,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#7C9CBF;">◑ Sleep &amp; Recovery</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Bedtime, wake time, HRV etc.</div></div>
         <div style="background:rgba(139,175,124,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#8BAF7C;">◆ Food &amp; Nutrition</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Meals, timing, gut reactions etc.</div></div>
         <div style="background:rgba(191,156,124,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#BF9C7C;">◎ Stress &amp; Mental</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Mood, anxiety, mental load etc.</div></div>
-        <div style="background:rgba(191,124,156,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#BF7C9C;">◈ Add-Ons</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Alcohol, caffeine, meds etc.</div></div>
-        <div style="background:rgba(124,191,191,0.1);border-radius:6px;padding:8px 10px;grid-column:span 2;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#7CBFBF;">▲ Focal Events</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Workouts, races, emotional low, physical discomfort etc. — scored 4–20</div></div>
+        <div style="background:rgba(191,124,156,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#BF7C9C;">◈ Recovery Model</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Rate muscle soreness, mental & physical recovery</div></div>
+        <div style="background:rgba(124,191,191,0.1);border-radius:6px;padding:8px 10px;grid-column:span 2;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#7CBFBF;">▲ Focal Events</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Workouts, races, emotional low, physical discomfort etc. — scored 3–15</div></div>
       </div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;margin-bottom:6px;">Scoring Focal Events</div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;">Rate four dimensions 1–5: <strong>Strength</strong> · <strong>Endurance</strong> · <strong>Mental State</strong> · <strong>Recovery Feel</strong>. Total score 4–20 is matched against your experience ranges.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;">Rate three dimensions 1–5: <strong>Strength</strong> · <strong>Endurance</strong> · <strong>Mental State</strong>. Total score 3–15 is matched against your experience ranges.</div>
     </div>
 
     <!-- Section 4 -->
@@ -652,7 +657,7 @@
         <div><span style="color:#3A9A9A;font-weight:700;">3.</span> Food &amp; Nutrition &nbsp;·&nbsp; food, snacks, gut, sugar, lipids, food pyramid</div>
         <div><span style="color:#3A9A9A;font-weight:700;">4.</span> Sleep &amp; Recovery &nbsp;·&nbsp; timing, consistency</div>
         <div><span style="color:#3A9A9A;font-weight:700;">5.</span> Stress &amp; Mental &nbsp;·&nbsp; morning / afternoon / evening patterns</div>
-        <div><span style="color:#3A9A9A;font-weight:700;">6.</span> Add-Ons &nbsp;·&nbsp; positive &amp; negative impact signals</div>
+        <div><span style="color:#3A9A9A;font-weight:700;">6.</span> Recovery Model &nbsp;·&nbsp; recovery patterns &amp; impact signals</div>
         <div><span style="color:#3A9A9A;font-weight:700;">7.</span> Focal Events &nbsp;·&nbsp; select a tier, analyze 5 most recent</div>
       </div>
     </div>
@@ -740,7 +745,7 @@
         <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;flex:1;">Food & Nutrition Analysis</div>
         <button onclick="toggleReportDetail('detail-food')" style="width:20px;height:20px;border-radius:50%;background:#8BAF7C;color:white;border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">i</button>
       </div>
-      <div id="info3" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(139,175,124,0.08);border-radius:6px;line-height:1.6;">Analyzes your logged food entries against gut health recommendations, triglyceride & sugar best practices, lipid levels, and the updated food pyramid.</div>
+      <div id="info3" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(139,175,124,0.08);border-radius:6px;line-height:1.6;">Analyzes your logged food entries against the 2025-2030 MAHA Dietary Guidelines — protein-first, whole real foods, ultra-processed food load, inverted pyramid alignment, and gut & metabolic health.</div>
       <button onclick="generateFoodReport()" style="width:100%;padding:9px;background:#8BAF7C;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="foodReportBtn">Perform Analysis</button>
       <div id="foodReportOutput" style="display:none;margin-top:14px;">
         <div id="foodReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;"></div>
@@ -780,7 +785,7 @@
     <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
         <div style="font-family:'DM Mono',monospace;font-size:22px;color:#BF7C9C;font-weight:700;line-height:1;">6.</div>
-        <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;flex:1;">Add-Ons</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;flex:1;">Recovery Model</div>
         <button onclick="toggleReportDetail('detail-substance')" style="width:20px;height:20px;border-radius:50%;background:#BF7C9C;color:white;border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">i</button>
       </div>
       <div id="info6" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(191,124,156,0.08);border-radius:6px;line-height:1.6;">Analyzes add-on/substance entries for possible positive or negative impacts relative to your Area of Focus.</div>
@@ -842,18 +847,19 @@
 
 <script>
 const CATEGORIES = {
-  sleep:      { label: "Sleep & Recovery", icon: "◑", color: "#7C9CBF" },
+  sleep:      { label: "Sleep Quality", icon: "◑", color: "#7C9CBF" },
   food:       { label: "Food & Nutrition",  icon: "◆", color: "#8BAF7C" },
   stress:     { label: "Stress & Mental",   icon: "◎", color: "#BF9C7C" },
-  substance:  { label: "Add-Ons",           icon: "◈", color: "#BF7C9C" },
+  substance:  { label: "Recovery Model",      icon: "◈", color: "#BF7C9C" },
   exercise:   { label: "Focal Events",      icon: "▲", color: "#7CBFBF" },
   supplement: { label: "Today's Logged Supplements", icon: "◉", color: "#3A9A9A" },
 };
-const METRICS = ["Strength", "Endurance", "Mental State", "Recovery Feel"];
+const METRICS = ["Strength", "Endurance", "Mental State"];
 
 let entries = [];
 let supplements = [];
 let currentCategory = "sleep";
+let substanceScores = {};
 let exerciseScores = {};
 let transcript = "";
 let accumulated = "";
@@ -947,7 +953,7 @@ function showSubTab(name) {
   }
 
   function renderBar(ok, good, strong) {
-    const total = 20;
+    const total = 15;
     const p1 = (ok / total) * 100;
     const p2 = ((ok + good) / total) * 100;
     const p3 = ((ok + good + strong) / total) * 100;
@@ -973,7 +979,7 @@ function showSubTab(name) {
     document.getElementById("goodVal").textContent   = `${ok+1}–${ok+good}`;
     document.getElementById("strongVal").textContent = `${ok+good+1}–${ok+good+strong}`;
 
-    const remaining = 20 - (ok + good + strong);
+    const remaining = 15 - (ok + good + strong);
     const r = document.getElementById("rangeRemaining");
     if (r) { r.textContent = remaining; r.style.color = remaining < 0 ? "#BF7C7C" : "#111"; }
 
@@ -1044,7 +1050,7 @@ function updateRangeSliders() {
   const strong = parseInt(document.getElementById("strongSlider").value) || 6;
   // Re-render bar if it exists, otherwise just update counts
   if (document.getElementById("rangeBar")) {
-    const total = 20;
+    const total = 15;
     const p1 = (ok / total) * 100;
     const p2 = ((ok + good) / total) * 100;
     const p3 = ((ok + good + strong) / total) * 100;
@@ -1062,7 +1068,7 @@ function updateRangeSliders() {
   document.getElementById("okVal").textContent     = `1–${ok}`;
   document.getElementById("goodVal").textContent   = `${ok+1}–${ok+good}`;
   document.getElementById("strongVal").textContent = `${ok+good+1}–${ok+good+strong}`;
-  const remaining = 20 - (ok + good + strong);
+  const remaining = 15 - (ok + good + strong);
   const r = document.getElementById("rangeRemaining");
   if (r) { r.textContent = remaining; r.style.color = remaining < 0 ? "#BF7C7C" : "#111"; }
   const saved = document.getElementById("rangesSaved");
@@ -1072,7 +1078,7 @@ function saveRanges() {
   const ok = parseInt(document.getElementById("okSlider").value);
   const good = parseInt(document.getElementById("goodSlider").value);
   const strong = parseInt(document.getElementById("strongSlider").value);
-  if (ok + good + strong > 20) { alert("Total exceeds 20. Please adjust."); return; }
+  if (ok + good + strong > 15) { alert("Total exceeds 15. Please adjust."); return; }
   localStorage.setItem("bl_ranges", JSON.stringify({ ok, good, strong }));
   document.getElementById("rangesSaved").style.display = "block";
 }
@@ -1573,16 +1579,18 @@ function buildCatGrid() {
 function selectCat(key) {
   currentCategory = key;
   exerciseScores = {};
+  substanceScores = {};
   buildCatGrid();
   updateMicStyle();
   document.getElementById("scoresCard").style.display = key === "exercise" ? "block" : "none";
+  document.getElementById("substanceScoresCard").style.display = key === "substance" ? "block" : "none";
   document.getElementById("stravaSection").style.display = key === "exercise" ? "block" : "none";
   // Per-category label + border
   const catMeta = {
-    sleep:     { label: "Sleep & Recovery", bg: "#7C9CBF", border: "#3A9A9A" },
+    sleep:     { label: "Sleep Quality", bg: "#7C9CBF", border: "#3A9A9A" },
     food:      { label: "Food & Nutrition",  bg: "#8BAF7C", border: "#3A9A9A" },
     stress:    { label: "Stress & Mental",   bg: "#BF9C7C", border: "#3A9A9A" },
-    substance: { label: "Add-Ons",           bg: "#BF7C9C", border: "#3A9A9A" },
+    substance: { label: "Recovery Model",     bg: "#BF7C9C", border: "#3A9A9A" },
     exercise:  { label: "Manual Entry",      bg: "#FC4C02", border: "#3A9A9A" },
   };
   const meta = catMeta[key];
@@ -1598,6 +1606,14 @@ function selectCat(key) {
     border.style.padding = "16px 14px 14px";
   }
   if (key === "exercise") { stravaCheckToken(); buildScoreRows(); }
+  if (key === "substance") { buildSubstanceScoreRows(); }
+  // Update textarea placeholder per category
+  const catPlaceholders = {
+    sleep:     "Include last meal time before bed, time in bed and hours slept...",
+    stress:    "Rate stress and/or mental state with contributing factors...",
+    substance: "Add any notes about your recovery (optional)...",
+  };
+  document.getElementById("transcriptText").placeholder = catPlaceholders[key] || "Your spoken entry will appear here... or type directly";
   // Supplement tile: show read-only today summary, hide entry form
   const isSupplement = key === "supplement";
   document.getElementById("suppLoggedPanel").style.display = isSupplement ? "block" : "none";
@@ -1622,6 +1638,29 @@ function buildScoreRows() {
 function setScore(metric, val) {
   exerciseScores[metric] = val;
   buildScoreRows();
+  updateSaveBtn();
+}
+
+const RECOVERY_METRICS = ["Muscle Soreness", "Mentally Ready to Go", "Physically Ready to Go"];
+function buildSubstanceScoreRows() {
+  const el = document.getElementById("substanceScoreRows");
+  if (!el) return;
+  el.innerHTML = RECOVERY_METRICS.map(m => `
+    <div class="score-row">
+      <span class="score-label" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#666;display:block;margin-bottom:5px;">${m}</span>
+      <div class="score-btns" style="display:flex;gap:4px;">
+        ${[1,2,3,4,5].map(v => `
+          <button class="score-btn ${substanceScores[m]===v?'selected':''}"
+            style="flex:1;height:36px;border-radius:4px;border:1px solid rgba(0,0,0,0.12);background:${substanceScores[m]===v?'#BF7C9C':'white'};color:${substanceScores[m]===v?'white':'#555'};border-color:${substanceScores[m]===v?'#BF7C9C':'rgba(0,0,0,0.12)'};"
+            onclick="setSubstanceScore('${m}',${v})">${v}</button>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+function setSubstanceScore(metric, val) {
+  substanceScores[metric] = val;
+  buildSubstanceScoreRows();
   updateSaveBtn();
 }
 
@@ -1722,7 +1761,11 @@ function setRecordingState(active) {
     wave.querySelectorAll(".wave-bar").forEach(b => b.classList.remove("active"));
     label.textContent = "Hold to Speak";
     label.style.color = "";
-    document.getElementById("transcriptText").placeholder = "Your spoken entry will appear here... or type directly";
+    const placeholders = {
+      sleep: "Include last meal time before bed, time in bed and hours slept...",
+      substance: "Rate Your Recovery — see scoring below",
+    };
+    document.getElementById("transcriptText").placeholder = placeholders[key] || "Your spoken entry will appear here... or type directly";
   }
 }
 
@@ -1759,11 +1802,12 @@ function updateSaveBtn() {
   const btn = document.getElementById("saveBtn");
   const val = document.getElementById("transcriptText").value.trim();
   const hasScores = Object.keys(exerciseScores).length > 0;
-  if (val || (currentCategory === "exercise" && hasScores)) {
+  const hasRecoveryScores = Object.keys(substanceScores).length > 0;
+  if (val || (currentCategory === "exercise" && hasScores) || (currentCategory === "substance" && hasRecoveryScores)) {
     btn.classList.add("ready");
     btn.classList.remove("saved");
     btn.textContent = "Save Entry";
-  } else {
+  } else if (!val && !(currentCategory === "substance" && hasRecoveryScores)) {
     btn.classList.remove("ready");
     btn.textContent = "Save Entry";
   }
@@ -1782,13 +1826,14 @@ function hideVoiceError() {
 function saveEntry() {
   const text = document.getElementById("transcriptText").value.trim();
   const hasScores = Object.keys(exerciseScores).length > 0;
-  if (!text && !(currentCategory === "exercise" && hasScores)) return;
+  if (!text && !(currentCategory === "exercise" && hasScores) && !(currentCategory === "substance" && Object.keys(substanceScores).length > 0)) return;
 
   const entry = {
     id: Date.now(), ts: Date.now(),
     category: currentCategory,
     note: text,
     ...(currentCategory === "exercise" ? { scores: { ...exerciseScores } } : {}),
+    ...(currentCategory === "substance" ? { recoveryScores: { ...substanceScores } } : {}),
   };
 
   entries.unshift(entry);
@@ -1797,8 +1842,10 @@ function saveEntry() {
   transcript = "";
   accumulated = "";
   exerciseScores = {};
+  substanceScores = {};
   updateTranscript();
   if (currentCategory === "exercise") buildScoreRows();
+  if (currentCategory === "substance") buildSubstanceScoreRows();
 
   const btn = document.getElementById("saveBtn");
   btn.classList.remove("ready");
@@ -1821,7 +1868,9 @@ function formatDate(ts) {
 function entryHTML(e, showDelete) {
   const cat = CATEGORIES[e.category] || { label: e.category, icon: "◈", color: "#3A9A9A" };
   const hasScores = e.scores && Object.keys(e.scores).length > 0;
+  const hasRecoveryScores = e.recoveryScores && Object.keys(e.recoveryScores).length > 0;
   const scores = hasScores ? `<div class="entry-scores">${Object.entries(e.scores).map(([k,v]) => `<span class="score-tag">${k}: ${v}/5</span>`).join("")}</div>` : "";
+  const recoveryScoresHtml = hasRecoveryScores ? `<div class="entry-scores">${Object.entries(e.recoveryScores).map(([k,v]) => `<span class="score-tag" style="background:rgba(191,124,156,0.1);color:#9A4A7A;">${k}: ${v}/5</span>`).join("")}</div>` : "";
   const rateBtn = e.category === "exercise" ? `
     <button onclick="toggleEntryScorePanel('${e.id}')"
       style="margin-top:8px;padding:5px 10px;border:1px solid ${hasScores ? '#7ABF3A' : 'rgba(0,0,0,0.15)'};background:${hasScores ? 'rgba(122,191,58,0.08)' : 'none'};border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:${hasScores ? '#4A8A1A' : '#777'};">
@@ -1855,6 +1904,7 @@ function entryHTML(e, showDelete) {
           <div class="entry-time mono">${formatDate(e.ts)} · ${formatTime(e.ts)}</div>
           <div class="entry-note">${e.note}</div>
           ${scores}
+          ${recoveryScoresHtml}
           ${rateBtn}
         </div>
         ${showDelete ? `<button class="delete-btn" onclick="deleteEntry(${e.id})">×</button>` : ""}
@@ -1954,9 +2004,10 @@ let selectedRange = null; // "ok" | "good" | "strong"
 let selectedEventId = null; // ts of selected focal event
 
 function getRangeBounds() {
-  const ok     = parseInt(localStorage.getItem("bl_ranges") ? JSON.parse(localStorage.getItem("bl_ranges")).ok     : 0) || 0;
-  const good   = parseInt(localStorage.getItem("bl_ranges") ? JSON.parse(localStorage.getItem("bl_ranges")).good   : 0) || 0;
-  const strong = parseInt(localStorage.getItem("bl_ranges") ? JSON.parse(localStorage.getItem("bl_ranges")).strong : 0) || 0;
+  const r_ = localStorage.getItem("bl_ranges") ? JSON.parse(localStorage.getItem("bl_ranges")) : {};
+  const ok     = parseInt(r_.ok)     || 5;
+  const good   = parseInt(r_.good)   || 5;
+  const strong = parseInt(r_.strong) || 5;
   return {
     ok:     { min: 0,          max: ok },
     good:   { min: ok,         max: ok + good },
@@ -1965,6 +2016,9 @@ function getRangeBounds() {
 }
 
 function getTotalScore(entry) {
+  if (entry.recoveryScores && Object.keys(entry.recoveryScores).length > 0) {
+    return Object.values(entry.recoveryScores).reduce((s, v) => s + (parseInt(v) || 0), 0);
+  }
   if (!entry.scores || !Object.keys(entry.scores).length) return null;
   return Object.values(entry.scores).reduce((s, v) => s + (parseInt(v) || 0), 0);
 }
@@ -1992,7 +2046,7 @@ function renderFocalEventList() {
       <div style="flex:1;">
         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
           <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${m.color};text-transform:uppercase;letter-spacing:2px;">${m.label}</span>
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">score ${b.min + 1}–${b.max} / 20</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">score ${b.min + 1}–${b.max} / 15</span>
         </div>
         <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;">${count} matching event${count !== 1 ? "s" : ""} · shows ${recent} most recent to pick from</div>
       </div>
@@ -2026,7 +2080,7 @@ function renderEventPicker() {
   const m = RANGE_META[selectedRange];
   const matchingEvents = entries
     .filter(e => e.category === "exercise" && e.scores && Object.keys(e.scores).length > 0)
-    .filter(e => { const t = getTotalScore(e); return t !== null && t > b.min && t <= b.max; })
+    .filter(e => { const t = getTotalScore(e); return t !== null && t > b.min && t <= b.max && (e.category === 'exercise' || e.category === 'substance'); })
     .sort((a, b2) => b2.ts - a.ts)
     .slice(0, 4);
 
@@ -2153,7 +2207,7 @@ async function runAnalysis() {
   // ── Build day-by-day data block for this event ───────────────────────────
   const eventDate = new Date(focal.ts).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
   const totalScore = getTotalScore(focal);
-  let dayBlock = `Event: "${(focal.note||"Focal Event").slice(0,50)}" scored ${totalScore}/20 on ${eventDate}\n\n`;
+  let dayBlock = `Event: "${(focal.note||"Focal Event").slice(0,50)}" scored ${totalScore}/15 on ${eventDate}\n\n`;
 
   for (let d = daysBack; d >= 1; d--) {
     const dayStart = focal.ts - d * 86400000;
@@ -2171,7 +2225,7 @@ async function runAnalysis() {
   // ── Build element list string for prompt ─────────────────────────────────
   const elementList = cachedElements.map(el => `- "${el.name}" (${el.category})`).join("\n");
 
-  const prompt = `You are a human performance analyst. A person scored ${totalScore}/20 on a focal event. Analyze the behavioral data logged in the ${daysBack} days before that event and rate each element below as STRONG, MODERATE, or NEEDS WORK.
+  const prompt = `You are a human performance analyst. A person scored ${totalScore}/15 on a focal event. Analyze the behavioral data logged in the ${daysBack} days before that event and rate each element below as STRONG, MODERATE, or NEEDS WORK.
 
 ELEMENTS TO RATE (only rate if evidence exists in the data):
 ${elementList}
@@ -2266,7 +2320,7 @@ ${dayBlock}`;
       </div>
       <div>
         <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;">${(focal.note||"Focal Event").slice(0,55)}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;margin-top:2px;">${evDate} · Score ${evScore}/20 · ${m.label} range · ${daysBack} days analyzed</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;margin-top:2px;">${evDate} · Score ${evScore}/15 · ${m.label} range · ${daysBack} days analyzed</div>
       </div>
     </div>`;
 
@@ -2998,7 +3052,18 @@ async function generateFoodReport(silent=false) {
     return `[${d}] ${e.note}`;
   }).join("\n");
 
-  const prompt = `You are a registered dietitian and functional medicine nutritionist. Analyze these food journal entries and return ONLY valid JSON, no other text or markdown.
+  const prompt = `You are a registered dietitian analyzing food journal entries against the 2025-2030 U.S. Dietary Guidelines for Americans (MAHA guidelines). Analyze these entries and return ONLY valid JSON, no other text or markdown.
+
+The 2025-2030 guidelines key principles:
+- PROTEIN FIRST: High-quality protein at every meal — meat, poultry, seafood, eggs, dairy, beans, nuts, seeds. Target 1.2-1.6g per kg body weight per day.
+- WHOLE REAL FOODS: Prioritize unprocessed, whole foods in their natural form. Avoid ultra-processed foods (UPFs), artificial additives, and refined carbohydrates.
+- INVERTED PYRAMID: Proteins, vegetables, fruits, and healthy fats form the largest part of the diet. Whole grains are limited. Refined grains should be minimized.
+- HEALTHY FATS: Prioritize fats from whole foods — meat, seafood, eggs, nuts, seeds, olives, avocados, olive oil, butter. Emphasize essential fatty acids.
+- FULL-FAT DAIRY: 3 servings/day of full-fat dairy (milk, cheese, yogurt) with no added sugars preferred over low-fat.
+- VEGETABLES & FRUIT: 3 servings vegetables + 2 servings fruit per day. Whole form preferred. Limit fruit juice.
+- ADDED SUGAR: Strictly limit added sugars and sweetened beverages.
+- NO ULTRA-PROCESSED FOODS: Avoid foods high in refined ingredients, chemical additives, artificial dyes, and added sugars.
+${aof ? `- User area of focus: "${aof}" — tailor recommendations accordingly.` : ""}
 
 Return this exact structure:
 {
@@ -3006,43 +3071,43 @@ Return this exact structure:
   "scoreLabel": "Good",
   "categories": [
     {
-      "id": "gut",
-      "title": "Gut Health",
-      "color": "#7ABF3A",
+      "id": "protein",
+      "title": "Protein & Whole Foods",
+      "color": "#BF7C5B",
       "rating": "MODERATE",
       "ratingColor": "#E8A838",
-      "observations": ["Observation 1 referencing actual foods", "Observation 2"],
-      "recommendations": ["Specific actionable tip 1", "Specific actionable tip 2"]
-    },
-    {
-      "id": "sugar",
-      "title": "Triglycerides & Sugar",
-      "color": "#E8A838",
-      "rating": "NEEDS WORK",
-      "ratingColor": "#D95B5B",
-      "observations": ["Observation referencing actual logged foods"],
-      "recommendations": ["Tip 1", "Tip 2"]
-    },
-    {
-      "id": "lipids",
-      "title": "Lipid & Heart Health",
-      "color": "#5B8DD9",
-      "rating": "STRONG",
-      "ratingColor": "#7ABF3A",
-      "observations": ["Observation"],
-      "recommendations": ["Tip 1", "Tip 2"]
+      "observations": ["Observation referencing actual logged foods vs protein-first guidance"],
+      "recommendations": ["Specific actionable tip based on 2025-2030 guidelines"]
     },
     {
       "id": "pyramid",
-      "title": "Food Pyramid Alignment",
+      "title": "2025-2030 Pyramid Alignment",
       "color": "#9C7CBF",
       "rating": "MODERATE",
       "ratingColor": "#E8A838",
-      "observations": ["Observation"],
+      "observations": ["How diet aligns with inverted pyramid — proteins/veg/fat at top, whole grains limited"],
+      "recommendations": ["Tip 1", "Tip 2"]
+    },
+    {
+      "id": "upf",
+      "title": "Ultra-Processed Food Load",
+      "color": "#D95B5B",
+      "rating": "NEEDS WORK",
+      "ratingColor": "#D95B5B",
+      "observations": ["Identify any UPFs, refined carbs, artificial additives, added sugars logged"],
+      "recommendations": ["Specific whole-food swap or reduction tip"]
+    },
+    {
+      "id": "gut",
+      "title": "Gut & Metabolic Health",
+      "color": "#7ABF3A",
+      "rating": "STRONG",
+      "ratingColor": "#7ABF3A",
+      "observations": ["Fiber intake, fermented foods, full-fat dairy, gut reactions from entries"],
       "recommendations": ["Tip 1", "Tip 2"]
     }
   ],
-  "summary": "One paragraph of prioritized next steps based on the data."
+  "summary": "One paragraph of prioritized next steps grounded in the 2025-2030 Dietary Guidelines."
 }
 
 Rating values must be exactly: STRONG, MODERATE, or NEEDS WORK.

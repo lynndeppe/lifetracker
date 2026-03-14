@@ -2562,7 +2562,7 @@ function downloadSuppReport() {
 async function generateIngredientReport() {
   if (!supplements.length) { showToast("No supplements saved yet."); return; }
 
-  // Build grouped ingredient map: name (lowercase) -> { sources: [], totalAmounts: [], rawAmounts: [] }
+  // Build grouped ingredient map
   const ingMap = {};
   supplements.forEach(s => {
     if (!s.ingredients || !s.ingredients.length) return;
@@ -2576,30 +2576,21 @@ async function generateIngredientReport() {
   });
 
   const hasIngredients = Object.keys(ingMap).length > 0;
-  if (!hasIngredients) {
-    // No scanned ingredients — still run timing-only analysis
-  }
 
   // Build prompt data
   const ingLines = hasIngredients ? Object.values(ingMap).map(ing => {
-    // Try to sum numeric amounts across all sources
-    let totalNum = 0;
-    let unit = "";
-    let canSum = true;
+    let totalNum = 0; let unit = ""; let canSum = true;
     ing.entries.forEach(e => {
       const a = e.scaledAmount || e.labelAmount || "";
       const m = a.trim().match(/^([0-9]+\.?[0-9]*)\s*([a-zA-Zµμ%]*)/);
-      if (m) {
-        totalNum += parseFloat(m[1]) || 0;
-        if (!unit) unit = m[2];
-        else if (unit !== m[2]) canSum = false;
-      } else { canSum = false; }
+      if (m) { totalNum += parseFloat(m[1]) || 0; if (!unit) unit = m[2]; else if (unit !== m[2]) canSum = false; }
+      else { canSum = false; }
     });
     const combinedAmt = canSum && totalNum > 0
       ? (Math.round(totalNum * 1000) / 1000) + unit
       : ing.entries.map(e => e.scaledAmount || e.labelAmount || "?").join(" + ");
     const sources = ing.entries.map(e => e.supp).join(", ");
-    return `- ${ing.displayName}: ${combinedAmt} total (from: ${sources}; label per serving: ${ing.entries.map(e => e.labelAmount || "?").join(", ")})`
+    return `- ${ing.displayName}: ${combinedAmt} total (from: ${sources}; label per serving: ${ing.entries.map(e => e.labelAmount || "?").join(", ")})`;
   }).join("\n") : "(No ingredient data scanned — timing analysis only)";
 
   const aof = getAreaOfFocus();
@@ -2607,35 +2598,44 @@ async function generateIngredientReport() {
     .map(s => `- ${s.name}: ${s.desc || "general use"}`).join("\n");
 
   const prompt = hasIngredients
-    ? `You are a sports nutrition and health scientist. Below is my complete supplement ingredient stack. Amounts listed are my NET TOTAL intake per session — already scaled by how many units I take versus the label serving size, and summed across all products containing that ingredient.
+    ? `You are a sports nutrition and health scientist. Below is my complete supplement ingredient stack. Amounts listed are my NET TOTAL intake per session.
 
-YOUR TASK:
-1. Group these ingredients by category (e.g. Vitamins, Minerals, Amino Acids, Adaptogens, Fatty Acids, Probiotics, Herbal Extracts, etc.)
-2. For each ingredient list:
-   - The net amount I take (from the data below)
-   - The science-based recommended daily dose range for healthy adults
-   - A brief note on primary function/benefit
-   - A status: WITHIN RANGE / BELOW RANGE / ABOVE RANGE / UNKNOWN (if no clear RDA exists)
-3. After all groups, add a SHORT SUMMARY noting any notable gaps, redundancies, or cautions based on my actual intake.
-4. Add a final section titled "OPTIMAL TIMING" that lists each supplement (not ingredient) with one short line (max 12 words) on the best time of day to take it${aof ? `, considering the user's area of focus: "${aof}"` : ""}.
+YOUR TASK — respond in exactly this structure:
 
-Format each ingredient like this:
-  INGREDIENT NAME
-    I take: [amount]
-    Rec. dose: [range]
-    Function: [brief]
-    Status: [status]
+## ABOVE AND BELOW REPORT
+List ONLY ingredients that are ABOVE or BELOW the recommended range (skip those within range or unknown). Use this format:
+ABOVE: [Ingredient Name] — [my amount] vs [rec range] — [one-line caution]
+BELOW: [Ingredient Name] — [my amount] vs [rec range] — [one-line note]
+If none are above or below, write "All ingredients within range or no clear RDA."
 
-Format the timing section like this:
-  SUPPLEMENT NAME — [optimal time]
+## INGREDIENT GROUPS
+Group ingredients into these categories ONLY (skip "Total Fat", "Cholesterol", and "Other Nutrients/Components"):
+- Vitamins
+- Minerals
+- Amino Acids & Proteins
+- Adaptogens & Herbal Extracts
+- Fatty Acids & Omegas
+- Probiotics & Enzymes
+- Performance & Energy Compounds
+- Other (for anything that does not fit above)
+
+For each ingredient within a group use exactly this format:
+INGREDIENT NAME
+  I take: [amount]
+  Rec. dose: [range]
+  Function: [brief, max 12 words]
+  Status: [WITHIN RANGE / BELOW RANGE / ABOVE RANGE / UNKNOWN]
+  Timing: [best time of day to take, max 12 words${aof ? `, considering area of focus: "${aof}"` : ""}]
+
+Do not include a separate timing section at the end. Timing is inline above only.
+Exclude any ingredient that belongs to "Total Fat", "Cholesterol", or "Other Nutrients/Components".
+Be factual, concise, and science-based. Do not recommend purchasing anything.
 
 MY NET INGREDIENT TOTALS:
 ${ingLines}
 
-MY SUPPLEMENTS (for timing section):
-${suppTimingList}
-
-Be factual, concise, and science-based. Do not recommend purchasing anything.`
+MY SUPPLEMENTS:
+${suppTimingList}`
     : `You are a sports nutritionist. For each supplement listed, provide the optimal time of day to take it${aof ? `, considering the user's area of focus: "${aof}"` : ""}. Keep each recommendation to one short line (max 12 words).
 
 Format as:
@@ -2650,7 +2650,7 @@ Be factual and science-based.`;
   const output = document.getElementById("ingReportOutput");
   const body = document.getElementById("ingReportBody");
 
-  // If report already exists, toggle visibility
+  // Toggle visibility if already generated
   if (body.innerHTML.trim() && output.style.display !== "none") {
     output.style.display = "none";
     btn.textContent = "View Report";
@@ -2673,14 +2673,11 @@ Be factual and science-based.`;
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
+        contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 4000 }
       })
     });
     const raw = await res.text();
-    console.log("Ingredient report raw response:", raw);
     let data;
     try { data = JSON.parse(raw); } catch(pe) {
       body.textContent = "Parse error: " + raw.slice(0, 300);
@@ -2689,17 +2686,12 @@ Be factual and science-based.`;
       btn.disabled = false; btn.style.background = "#3A9A9A";
       return;
     }
-    console.log("Ingredient report parsed:", JSON.stringify(data).slice(0, 500));
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
                || data?.error?.message
                || JSON.stringify(data).slice(0, 400);
-    // Render markdown-style formatting as HTML
-    const html = text
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/^#{1,3} (.+)$/gm, "<div style='font-family:\"DM Mono\",monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:14px 0 6px;font-weight:700;'>$1</div>")
-      .replace(/\n/g, "<br>");
+
+    // Render with custom formatting
+    const html = renderIngredientReport(text);
     body.innerHTML = html;
     output.style.display = "block";
     btn.textContent = "Hide Report";
@@ -2709,6 +2701,119 @@ Be factual and science-based.`;
   }
   btn.disabled = false;
   btn.style.background = "#3A9A9A";
+}
+
+function renderIngredientReport(text) {
+  const lines = text.split("\n");
+  let html = "";
+  let inAboveBelow = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const line = raw.trim();
+
+    // Section headings (## ...)
+    if (/^##\s+ABOVE AND BELOW REPORT/i.test(line)) {
+      inAboveBelow = true;
+      html += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:6px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Above and Below Report</div>`;
+      continue;
+    }
+    if (/^##\s+INGREDIENT GROUPS/i.test(line)) {
+      inAboveBelow = false;
+      html += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Ingredient Groups</div>`;
+      continue;
+    }
+    if (/^##\s+/.test(line)) {
+      inAboveBelow = false;
+      const heading = line.replace(/^##\s+/, "");
+      html += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ ${escHtml(heading)}</div>`;
+      continue;
+    }
+
+    // Single # headings — ingredient category group labels
+    if (/^#\s+/.test(line)) {
+      inAboveBelow = false;
+      const heading = line.replace(/^#\s+/, "");
+      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
+      continue;
+    }
+
+    // Bold category group from ** ** heading
+    if (/^\*\*[^*]+\*\*$/.test(line)) {
+      inAboveBelow = false;
+      const heading = line.replace(/\*\*/g, "");
+      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
+      continue;
+    }
+
+    // ABOVE/BELOW lines in the summary section
+    if (inAboveBelow) {
+      if (/^ABOVE:/i.test(line)) {
+        const content = line.replace(/^ABOVE:\s*/i, "");
+        html += `<div style="margin-bottom:5px;"><span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:#D9534F;">ABOVE</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;"> — ${escHtml(content)}</span></div>`;
+        continue;
+      }
+      if (/^BELOW:/i.test(line)) {
+        const content = line.replace(/^BELOW:\s*/i, "");
+        html += `<div style="margin-bottom:5px;"><span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:#C9A800;">BELOW</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;"> — ${escHtml(content)}</span></div>`;
+        continue;
+      }
+    }
+
+    // Ingredient name line (ALL CAPS or Title Case standalone line not starting with spaces/dashes)
+    if (line && !/^\s/.test(raw) && !/^[-*#]/.test(line) && !/^(I take|Rec\.|Function|Status|Timing|ABOVE|BELOW|All ingredients)/i.test(line) && !inAboveBelow) {
+      html += `<div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;margin:10px 0 3px;">${escHtml(formatInline(line))}</div>`;
+      continue;
+    }
+
+    // Indented detail lines
+    if (/^\s+(I take|Rec\.|Rec dose|Recommended|Function|Status|Timing)[\s:]/i.test(raw)) {
+      const colonIdx = line.indexOf(":");
+      if (colonIdx > -1) {
+        const label = line.slice(0, colonIdx).trim();
+        const value = line.slice(colonIdx + 1).trim();
+
+        let valueHtml = escHtml(value);
+        // Status colouring
+        if (/^status$/i.test(label)) {
+          if (/ABOVE/i.test(value)) valueHtml = `<strong style="color:#D9534F;">${escHtml(value)}</strong>`;
+          else if (/BELOW/i.test(value)) valueHtml = `<strong style="color:#C9A800;">${escHtml(value)}</strong>`;
+          else if (/WITHIN/i.test(value)) valueHtml = `<strong style="color:#3A9A9A;">${escHtml(value)}</strong>`;
+          else valueHtml = `<strong style="color:#888;">${escHtml(value)}</strong>`;
+        }
+        // Timing line — teal label
+        if (/^timing$/i.test(label)) {
+          html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#3A9A9A;font-weight:700;">Timing:</span> ${escHtml(value)}</div>`;
+          continue;
+        }
+        html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#888;">${escHtml(label)}:</span> ${valueHtml}</div>`;
+        continue;
+      }
+    }
+
+    // SUPPLEMENT — timing lines (timing-only mode)
+    if (/^.+\s+—\s+.+$/.test(line) && !inAboveBelow) {
+      const parts = line.split(/\s+—\s+/);
+      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#333;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span style="font-weight:700;color:#111;">${escHtml(parts[0])}</span> <span style="color:#3A9A9A;">—</span> ${escHtml(parts.slice(1).join(" — "))}</div>`;
+      continue;
+    }
+
+    // Plain text / fallback
+    if (line) {
+      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-bottom:2px;">${escHtml(formatInline(line))}</div>`;
+    } else {
+      html += `<div style="height:4px;"></div>`;
+    }
+  }
+  return html;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function formatInline(s) {
+  // strip markdown bold/italic for plain rendering (already escaped)
+  return s.replace(/\*\*(.+?)\*\*/g,"$1").replace(/\*(.+?)\*/g,"$1");
 }
 
 function downloadIngredientReport() {

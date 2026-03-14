@@ -716,11 +716,11 @@
         <button onclick="toggleReportInfo('info1')" style="width:20px;height:20px;border-radius:50%;background:#3A9A9A;color:white;border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">i</button>
       </div>
       <div id="info1" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(58,154,154,0.06);border-radius:6px;line-height:1.6;">All saved supplements in alphabetical order with daily dose — share with your doctor or trainer.</div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="toggleSuppReportPreview()" style="flex:1;padding:9px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="suppReportViewBtn">View Report</button>
-        <button onclick="downloadSuppReport()" style="padding:9px 14px;background:none;border:1px solid #3A9A9A;color:#3A9A9A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">&#8595; Download</button>
+      <button onclick="toggleSuppReportPreview()" style="width:100%;padding:9px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="suppReportViewBtn">View Report</button>
+      <div id="suppReportPreview" style="display:none;margin-top:14px;">
+        <div id="suppReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;"></div>
+        <button onclick="downloadSuppReport()" style="width:100%;margin-top:10px;padding:9px;background:none;border:1px solid #3A9A9A;color:#3A9A9A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">&#8595; Download Report</button>
       </div>
-      <div id="suppReportPreview" style="display:none;margin-top:14px;background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;"></div>
     </div>
 
     <!-- Report 2: Supplement Analysis -->
@@ -2534,6 +2534,7 @@ function renderSuppReport() {
 }
 async function toggleSuppReportPreview() {
   const el = document.getElementById("suppReportPreview");
+  const body = document.getElementById("suppReportBody");
   const btn = document.getElementById("suppReportViewBtn");
   if (!el) return;
   if (el.style.display !== "none") {
@@ -2544,7 +2545,7 @@ async function toggleSuppReportPreview() {
 
   // Show base report
   const lines = buildSuppReportLines();
-  el.innerHTML = lines.map(l => `<div>${l || "&nbsp;"}</div>`).join("");
+  body.innerHTML = lines.map(l => `<div>${l || "&nbsp;"}</div>`).join("");
   el.style.display = "block";
   if (btn) btn.textContent = "Hide Report";
 }
@@ -2697,36 +2698,41 @@ Be factual and science-based.`;
 }
 
 function renderIngredientReport(text) {
-  // ── Pass 1: strip any AI-generated Above/Below section, parse ingredient blocks ──
-  // Remove the AI's own summary section (## ABOVE AND BELOW REPORT ... ## INGREDIENT GROUPS)
-  const cleaned = text.replace(/^##\s+ABOVE AND BELOW REPORT[\s\S]*?(?=^##\s+INGREDIENT GROUPS)/im, "");
+  // ── Pass 1: parse ingredient blocks — indentation-agnostic ──
+  // Field keywords that belong to an ingredient block
+  const FIELD_RE = /^(I take|Rec\.?\s*dose?|Recommended[^:]*|Function|Status|Timing)\s*:\s*(.*)/i;
+  const HEADING_RE = /^#{1,3}\s/;
+  const BULLET_RE  = /^[-*]\s/;
 
-  // Parse every ingredient block to collect status, name, "I take", "Rec. dose"
-  // An ingredient block starts with a non-indented, non-heading, non-empty line
-  // followed by indented detail lines
-  const ingRecords = []; // { name, status, itake, recdose }
-  const blockLines = cleaned.split("\n");
+  const ingRecords = [];
   let cur = null;
-  for (const raw of blockLines) {
+  for (const raw of text.split("\n")) {
     const line = raw.trim().replace(/\*\*/g, "").replace(/\*/g, "");
     if (!line) continue;
-    // Detect indented field lines
-    if (/^\s/.test(raw)) {
-      if (!cur) continue;
-      const m = line.match(/^(I take|Rec\.?\s*dose?|Recommended[^:]*|Status|Function|Timing)\s*:\s*(.*)/i);
-      if (!m) continue;
-      const key = m[1].toLowerCase(); const val = m[2].trim();
-      if (/^i take/i.test(key))        cur.itake   = val;
-      if (/^rec/i.test(key))           cur.recdose = val;
-      if (/^status/i.test(key))        cur.status  = val.toUpperCase();
-      if (/^function/i.test(key))      cur.func    = val;
-      if (/^timing/i.test(key))        cur.timing  = val;
-    } else {
-      // Non-indented line — could be ingredient name or section heading
-      if (/^#{1,3}\s/.test(line) || /^[-*]/.test(line)) { cur = null; continue; }
-      // Skip lines that look like field labels without indent (malformed)
-      if (/^(I take|Rec\.|Status|Function|Timing)/i.test(line)) continue;
-      // New ingredient name
+
+    const fieldMatch = line.match(FIELD_RE);
+    if (fieldMatch) {
+      if (cur) {
+        const key = fieldMatch[1].toLowerCase();
+        const val = fieldMatch[2].trim();
+        if (/^i take/i.test(key))   cur.itake   = val;
+        else if (/^rec/i.test(key)) cur.recdose = val;
+        else if (/^status/i.test(key)) cur.status = val.replace(/\*\*/g,"").toUpperCase();
+        else if (/^function/i.test(key)) cur.func = val;
+        else if (/^timing/i.test(key))   cur.timing = val;
+      }
+      continue;
+    }
+
+    // Section headings and bullets reset current ingredient
+    if (HEADING_RE.test(line) || BULLET_RE.test(line)) { cur = null; continue; }
+
+    // Skip known non-ingredient non-field text
+    if (/^(ABOVE|BELOW|All ingredients|MY |Be |Do not|For each|Group|Format|Include|Exclude)/i.test(line)) { cur = null; continue; }
+
+    // Anything else that isn't a field = potential ingredient name
+    // Only start a new ingredient if it looks like a name (not a sentence)
+    if (line.length < 80 && !/[.?!]$/.test(line)) {
       cur = { name: formatInline(line), status: "", itake: "", recdose: "", func: "", timing: "" };
       ingRecords.push(cur);
     }
@@ -2757,7 +2763,9 @@ function renderIngredientReport(text) {
     });
   }
 
-  // ── Pass 2: render the detail section (cleaned text, no AI summary block) ──
+  // ── Pass 2: render the detail section ──
+  // Remove any AI-generated above/below summary block if present
+  const cleaned = text.replace(/^##\s+ABOVE AND BELOW REPORT[\s\S]*?(?=^##\s+INGREDIENT GROUPS)/im, "");
   const lines = cleaned.split("\n");
   let detailHtml = "";
 
@@ -2766,64 +2774,58 @@ function renderIngredientReport(text) {
     const stripped = line.replace(/\*\*/g, "").replace(/\*/g, "");
 
     // ## section headings
-    if (/^##\s+INGREDIENT GROUPS/i.test(line)) {
+    if (/^##\s+INGREDIENT GROUPS/i.test(stripped)) {
       detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Ingredient Groups</div>`;
       continue;
     }
-    if (/^##\s+/.test(line)) {
+    if (/^##\s+/.test(stripped)) {
       const heading = stripped.replace(/^##\s+/, "");
       detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ ${escHtml(heading)}</div>`;
       continue;
     }
     // # group label headings
-    if (/^#\s+/.test(line)) {
+    if (/^#\s+/.test(stripped)) {
       const heading = stripped.replace(/^#\s+/, "");
       detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
       continue;
     }
     // **Bold-only line** = category group heading
     if (/^\*\*[^*]+\*\*$/.test(line)) {
-      const heading = stripped;
-      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(stripped)} —</div>`;
       continue;
     }
-    // Indented detail lines
-    if (/^\s/.test(raw)) {
-      const m = stripped.match(/^(I take|Rec\.?\s*dose?|Recommended[^:]*|Function|Status|Timing)\s*:\s*(.*)/i);
-      if (m) {
-        const label = m[1].trim(); const value = m[2].trim();
-        if (/^timing/i.test(label)) {
-          detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#3A9A9A;font-weight:700;">Timing:</span> ${escHtml(value)}</div>`;
-        } else if (/^status/i.test(label)) {
-          let vHtml = escHtml(value);
-          if (/ABOVE/i.test(value))  vHtml = `<strong style="color:#D9534F;">${escHtml(value)}</strong>`;
-          else if (/BELOW/i.test(value)) vHtml = `<strong style="color:#C9A800;">${escHtml(value)}</strong>`;
-          else if (/WITHIN/i.test(value)) vHtml = `<strong style="color:#3A9A9A;">${escHtml(value)}</strong>`;
-          else vHtml = `<strong style="color:#888;">${escHtml(value)}</strong>`;
-          detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#888;">${escHtml(label)}:</span> ${vHtml}</div>`;
-        } else {
-          detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#888;">${escHtml(label)}:</span> ${escHtml(value)}</div>`;
-        }
-        continue;
+    // Field lines — match regardless of indentation
+    const fm = stripped.match(/^(I take|Rec\.?\s*dose?|Recommended[^:]*|Function|Status|Timing)\s*:\s*(.*)/i);
+    if (fm) {
+      const label = fm[1].trim(); const value = fm[2].trim();
+      if (/^timing/i.test(label)) {
+        detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#3A9A9A;font-weight:700;">Timing:</span> ${escHtml(value)}</div>`;
+      } else if (/^status/i.test(label)) {
+        let vHtml = escHtml(value);
+        if (/ABOVE/i.test(value))       vHtml = `<strong style="color:#D9534F;">${escHtml(value)}</strong>`;
+        else if (/BELOW/i.test(value))  vHtml = `<strong style="color:#C9A800;">${escHtml(value)}</strong>`;
+        else if (/WITHIN/i.test(value)) vHtml = `<strong style="color:#3A9A9A;">${escHtml(value)}</strong>`;
+        else                             vHtml = `<strong style="color:#888;">${escHtml(value)}</strong>`;
+        detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#888;">${escHtml(label)}:</span> ${vHtml}</div>`;
+      } else {
+        detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#888;">${escHtml(label)}:</span> ${escHtml(value)}</div>`;
       }
-      // Indented plain text
-      if (stripped) detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;">${escHtml(stripped)}</div>`;
       continue;
     }
-    // Non-indented non-heading non-empty = ingredient name
-    if (stripped && !/^[-*]/.test(stripped) && !/^(I take|Rec\.|Status|Function|Timing)/i.test(stripped)) {
-      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;margin:10px 0 3px;">${escHtml(formatInline(stripped))}</div>`;
-      continue;
-    }
-    // Bullet list items (e.g. category list items)
+    // Bullet list items
     if (/^[-*]\s+/.test(stripped)) {
       detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:8px;margin-bottom:2px;">${escHtml(stripped.replace(/^[-*]\s+/, ""))}</div>`;
       continue;
     }
     // Timing-only mode: SUPPLEMENT — time
-    if (/^.+\s+[—–-]\s+.+$/.test(stripped)) {
+    if (/^.+\s+[—–-]\s+.+$/.test(stripped) && !/^(I take|Rec|Status|Function|Timing)/i.test(stripped)) {
       const parts = stripped.split(/\s+[—–-]\s+/);
       detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#333;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span style="font-weight:700;color:#111;">${escHtml(parts[0])}</span> <span style="color:#3A9A9A;">—</span> ${escHtml(parts.slice(1).join(" — "))}</div>`;
+      continue;
+    }
+    // Non-empty non-field non-heading = ingredient name
+    if (stripped && !/^(ABOVE|BELOW|All ingredients)/i.test(stripped)) {
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;margin:10px 0 3px;">${escHtml(formatInline(stripped))}</div>`;
       continue;
     }
     if (!stripped) detailHtml += `<div style="height:4px;"></div>`;
@@ -3316,6 +3318,8 @@ function stravaDisconnect() {
   document.getElementById("strava-activities").innerHTML = "";
 }
 
+let stravaOpenPanelActivityId = null; // track which panel is open to prevent re-render wipe
+
 function stravaCheckToken() {
   try {
     const t = JSON.parse(localStorage.getItem("strava_token") || "null");
@@ -3327,9 +3331,9 @@ function stravaCheckToken() {
         const av = document.getElementById("strava-avatar");
         av.src = t.athlete_profile; av.style.display = "block";
       }
-      // Show previously cached activities right away
+      // Show previously cached activities right away — but don't wipe an open score panel
       const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
-      if (cached.length) renderStravaActivities(cached, 0);
+      if (cached.length && !stravaOpenPanelActivityId) renderStravaActivities(cached, 0);
       return true;
     }
   } catch {}
@@ -3454,14 +3458,23 @@ const stravaImportedIds = new Set(JSON.parse(localStorage.getItem("strava_import
 function setStravaScore(activityId, metric, val) {
   if (!stravaScoreTemp[activityId]) stravaScoreTemp[activityId] = {};
   stravaScoreTemp[activityId][metric] = val;
-  // Only update buttons for THIS metric — preserve other metrics' highlights
-  [1,2,3,4,5].forEach(v => {
-    const btn = document.getElementById(`strava-score-${activityId}-${metric.replace(/ /g,'_')}-${v}`);
-    if (!btn) return;
-    const selected = v === val;
-    btn.style.background  = selected ? "#7ABF3A" : "white";
-    btn.style.color       = selected ? "white"   : "#555";
-    btn.style.borderColor = selected ? "#7ABF3A" : "rgba(0,0,0,0.12)";
+  // Re-apply all highlights for this activity so nothing goes stale
+  applyStravaScoreHighlights(activityId);
+}
+
+// Restore all highlights for an open score panel from stravaScoreTemp
+function applyStravaScoreHighlights(activityId) {
+  const scores = stravaScoreTemp[activityId] || {};
+  METRICS.forEach(metric => {
+    const selected = scores[metric];
+    [1,2,3,4,5].forEach(v => {
+      const btn = document.getElementById(`strava-score-${activityId}-${metric.replace(/ /g,'_')}-${v}`);
+      if (!btn) return;
+      const isSelected = v === selected;
+      btn.style.background  = isSelected ? "#7ABF3A" : "white";
+      btn.style.color       = isSelected ? "white"   : "#555";
+      btn.style.borderColor = isSelected ? "#7ABF3A" : "rgba(0,0,0,0.12)";
+    });
   });
 }
 function saveStravaScores(activityId, entryId, skip) {
@@ -3471,6 +3484,7 @@ function saveStravaScores(activityId, entryId, skip) {
     if (entry) { entry.scores = scores; saveEntries(); }
     delete stravaScoreTemp[activityId];
   }
+  stravaOpenPanelActivityId = null;
   // Re-render without open panel
   const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
   renderStravaActivities(cached, 0);
@@ -3515,9 +3529,14 @@ function stravaImportAsFocalEvent(activityId) {
   const saveBtn = document.getElementById(`strava-save-${activityId}`);
   if (saveBtn) { saveBtn.textContent = "Imported ✓"; saveBtn.disabled = true; saveBtn.style.background = "#7ABF3A"; }
 
+  // Clear any stale temp scores for this activity
+  delete stravaScoreTemp[activityId];
+  stravaOpenPanelActivityId = activityId;
+
   // Re-render activities with score panel open for this one
   const allCached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
   renderStravaActivities(allCached, 0, activityId, entryId);
+  applyStravaScoreHighlights(activityId);
   updateUI();
 }
 

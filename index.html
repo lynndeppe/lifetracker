@@ -2995,7 +2995,7 @@ const REPORT_CONFIG = {
     prompt: (entries, aof) => `You are a sleep and recovery specialist. Analyze these sleep journal entries and return ONLY valid JSON.
 ${aof ? `User's area of focus: "${aof}".` : ""}
 
-Return this exact structure — rating must be exactly STRONG, MODERATE, or NEEDS WORK:
+Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK:
 {
   "score": 70,
   "scoreLabel": "Moderate",
@@ -3018,7 +3018,7 @@ ${entries.map(e => `[${new Date(e.ts).toLocaleDateString([],{month:"short",day:"
     prompt: (entries, aof) => `You are a mental wellness and performance psychologist. Analyze these stress/mental journal entries and return ONLY valid JSON.
 ${aof ? `User's area of focus: "${aof}".` : ""}
 
-Return this exact structure — rating must be exactly STRONG, MODERATE, or NEEDS WORK:
+Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK:
 {
   "score": 65,
   "scoreLabel": "Moderate",
@@ -3039,7 +3039,7 @@ ${entries.map(e => `[${new Date(e.ts).toLocaleDateString([],{month:"short",day:"
     elements: ["Positive impacts on area of focus", "Negative or neutral impacts", "Timing & patterns"],
     prompt: (entries, aof) => `You are a functional medicine specialist. Analyze these add-on/substance journal entries for possible positive or negative impacts${aof ? ` on the user's area of focus: "${aof}"` : ""}. Return ONLY valid JSON.
 
-Return this exact structure — rating must be exactly STRONG, MODERATE, or NEEDS WORK:
+Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK:
 {
   "score": 60,
   "scoreLabel": "Moderate",

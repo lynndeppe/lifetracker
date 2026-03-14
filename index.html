@@ -2232,93 +2232,120 @@ ${dayBlock}`;
     return;
   }
 
-  // ── Render grid ──────────────────────────────────────────────────────────
+  // ── Render simple pattern chart ──────────────────────────────────────────
   try {
-    const RATING_ROWS = [
-      { key: "STRONG",     label: "Strong",     color: "#7ABF3A", bg: "rgba(122,191,58,0.05)",  border: "rgba(122,191,58,0.25)"  },
-      { key: "MODERATE",   label: "Moderate",   color: "#E8A838", bg: "rgba(232,168,56,0.05)",  border: "rgba(232,168,56,0.25)"  },
-      { key: "NEEDS WORK", label: "Needs Work", color: "#D95B5B", bg: "rgba(217,91,91,0.05)",   border: "rgba(217,91,91,0.25)"   },
-    ];
+    const RATING_COLOR = { "STRONG": "#7ABF3A", "MODERATE": "#E8A838", "NEEDS WORK": "#D95B5B" };
+    const RATING_ICON  = { "STRONG": "▲", "MODERATE": "◆", "NEEDS WORK": "▼" };
 
-    // Collect all unique element names across all days
-    const allElNames = {};
+    // Collect all unique elements across all days
+    const allElements = {};
     days.forEach(dayObj => {
       (dayObj.elements || []).forEach(el => {
-        if (!allElNames[el.name]) allElNames[el.name] = el.category || "food";
+        if (!allElements[el.name]) allElements[el.name] = { category: el.category || "food", ratings: {} };
+        allElements[el.name].ratings[dayObj.day] = { rating: el.rating, note: el.note || "" };
       });
     });
 
-    // Event header
     const evDate = new Date(focal.ts).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
     const evScore = getTotalScore(focal);
 
-    let html = `<div style="overflow-x:auto;">`;
-    html += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;margin-bottom:10px;letter-spacing:1px;">
-      ▲ ${(focal.note||"Focal Event").slice(0,50)} · ${evDate} · Score ${evScore}/20
+    // Group elements by category
+    const byCategory = {};
+    Object.entries(allElements).forEach(([name, data]) => {
+      const cat = data.category;
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push({ name, ...data });
+    });
+
+    let html = "";
+
+    // Event header pill
+    html += `<div style="background:linear-gradient(135deg,rgba(122,191,58,0.12),rgba(122,191,58,0.04));border:1px solid rgba(122,191,58,0.3);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:#7ABF3A;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:white;">${evScore}</span>
+      </div>
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;">${(focal.note||"Focal Event").slice(0,55)}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;margin-top:2px;">${evDate} · Score ${evScore}/20 · ${m.label} range · ${daysBack} days analyzed</div>
+      </div>
     </div>`;
 
-    // Column headers = d3 → d1
-    const labelW = 140;
-    html += `<div style="display:flex;margin-left:${labelW}px;margin-bottom:6px;">`;
-    days.forEach(dayObj => {
-      html += `<div style="flex:1;text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:#3A9A9A;font-weight:700;letter-spacing:1px;">${dayObj.day}</div>`;
+    // Day labels row
+    const dayLabels = days.map(d => {
+      const dNum = parseInt(d.day.replace("d",""));
+      const ts = focal.ts - dNum * 86400000;
+      return new Date(ts).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
     });
-    html += `</div>`;
 
-    // Collect all unique element names across all days
+    html += `<div style="display:flex;margin-bottom:10px;padding-left:8px;">
+      <div style="width:130px;flex-shrink:0;"></div>
+      ${days.map((d,i) => `<div style="flex:1;text-align:center;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:#3A9A9A;">${d.day}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:8px;color:#aaa;">${dayLabels[i]}</div>
+      </div>`).join("")}
+      <div style="width:8px;flex-shrink:0;"></div>
+    </div>`;
 
-    // One rating group per row type
-    RATING_ROWS.forEach(row => {
-      const relevantElements = Object.keys(allElNames).filter(elName =>
-        days.some(dayObj => (dayObj.elements||[]).some(el => el.name === elName && el.rating === row.key))
-      );
-      if (!relevantElements.length) return;
+    // One section per category
+    Object.entries(byCategory).forEach(([cat, elements]) => {
+      const color = catColor(cat);
+      const icon = CATEGORIES[cat]?.icon || "·";
+      const label = CATEGORIES[cat]?.label || cat;
 
-      // Group header
-      html += `<div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${row.color};letter-spacing:2px;text-transform:uppercase;margin:12px 0 4px;padding:4px 8px;background:${row.bg};border-left:3px solid ${row.color};border-radius:0 4px 4px 0;">${row.label}</div>`;
-
-      // One row per element in this rating
-      relevantElements.forEach(elName => {
-        const cat = allElNames[elName];
-        const color = catColor(cat);
-        const icon = CATEGORIES[cat]?.icon || "·";
-
-        html += `<div style="display:flex;align-items:center;margin-bottom:4px;border:1px solid ${row.border};border-radius:6px;overflow:hidden;background:${row.bg};">`;
-        // Element label
-        html += `<div style="width:${labelW}px;flex-shrink:0;padding:6px 8px;border-right:1px solid ${row.border};display:flex;align-items:center;gap:5px;">
-          <div style="width:14px;height:14px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:7px;color:white;flex-shrink:0;">${icon}</div>
-          <span style="font-family:'DM Mono',monospace;font-size:8px;color:#444;line-height:1.3;">${elName}</span>
+      html += `<div style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;padding:4px 8px;background:${color}15;border-radius:4px;">
+          <div style="width:16px;height:16px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:8px;color:white;">${icon}</div>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:${color};letter-spacing:1.5px;text-transform:uppercase;">${label}</span>
         </div>`;
-        // Day cells
+
+      elements.forEach(el => {
+        html += `<div style="display:flex;align-items:center;margin-bottom:5px;padding-left:8px;">
+          <div style="width:130px;flex-shrink:0;font-family:'DM Mono',monospace;font-size:9px;color:#555;padding-right:8px;line-height:1.3;">${el.name}</div>`;
+
         days.forEach(dayObj => {
-          const match = (dayObj.elements||[]).find(el => el.name === elName && el.rating === row.key);
-          html += `<div style="flex:1;min-height:44px;border-right:1px dashed ${row.border};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;">`;
-          if (match) {
-            html += `<div title="${match.note||""}" style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-              <div style="width:16px;height:16px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:8px;color:white;box-shadow:0 1px 3px ${color}66;">${icon}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:6px;color:#777;text-align:center;max-width:50px;line-height:1.2;">${(match.note||"").slice(0,25)}</div>
+          const r = el.ratings[dayObj.day];
+          if (r) {
+            const rc = RATING_COLOR[r.rating] || "#ccc";
+            const ri = RATING_ICON[r.rating] || "·";
+            html += `<div style="flex:1;display:flex;justify-content:center;align-items:center;" title="${r.note}">
+              <div style="width:30px;height:30px;border-radius:6px;background:${rc}22;border:1.5px solid ${rc};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;">
+                <span style="font-size:10px;color:${rc};">${ri}</span>
+                <span style="font-family:'DM Mono',monospace;font-size:6px;color:${rc};font-weight:700;">${r.rating === "NEEDS WORK" ? "NW" : r.rating.slice(0,3)}</span>
+              </div>
             </div>`;
           } else {
-            html += `<div style="width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,0.07);"></div>`;
+            html += `<div style="flex:1;display:flex;justify-content:center;align-items:center;">
+              <div style="width:30px;height:30px;border-radius:6px;background:rgba(0,0,0,0.03);border:1px dashed rgba(0,0,0,0.1);"></div>
+            </div>`;
           }
-          html += `</div>`;
         });
-        html += `</div>`;
+
+        // Show most recent note if any
+        const latestNote = Object.values(el.ratings).reverse().find(r => r.note)?.note || "";
+        html += `<div style="width:8px;flex-shrink:0;"></div></div>`;
+        if (latestNote) {
+          html += `<div style="padding-left:138px;font-family:'DM Mono',monospace;font-size:8px;color:#999;margin-bottom:3px;font-style:italic;">"${latestNote.slice(0,50)}"</div>`;
+        }
       });
+
+      html += `</div>`;
     });
 
-    // Legend — unique categories present in results
-    const legendCats = [...new Set(Object.values(allElNames))];
-    html += `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.06);">`;
-    legendCats.forEach(cat => {
-      html += `<div style="display:flex;align-items:center;gap:4px;">
-        <div style="width:12px;height:12px;border-radius:50%;background:${catColor(cat)};display:flex;align-items:center;justify-content:center;font-size:6px;color:white;">${CATEGORIES[cat]?.icon||"·"}</div>
-        <span style="font-family:'DM Mono',monospace;font-size:8px;color:#666;text-transform:uppercase;">${CATEGORIES[cat]?.label||cat}</span>
-      </div>`;
-    });
-    html += `</div></div>`;
+    // Legend
+    html += `<div style="border-top:1px solid rgba(0,0,0,0.07);padding-top:10px;margin-top:4px;display:flex;gap:14px;flex-wrap:wrap;">
+      ${Object.entries(RATING_COLOR).map(([rating, color]) =>
+        `<div style="display:flex;align-items:center;gap:5px;">
+          <div style="width:12px;height:12px;border-radius:3px;background:${color}22;border:1.5px solid ${color};display:flex;align-items:center;justify-content:center;font-size:7px;color:${color};">${RATING_ICON[rating]}</div>
+          <span style="font-family:'DM Mono',monospace;font-size:8px;color:#777;">${rating === "NEEDS WORK" ? "Needs Work" : rating.slice(0,1) + rating.slice(1).toLowerCase()}</span>
+        </div>`
+      ).join("")}
+      <span style="font-family:'DM Mono',monospace;font-size:8px;color:#bbb;margin-left:auto;">NW = Needs Work · empty = no data</span>
+    </div>`;
 
-    if (!days.length) html = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;padding:12px;">No behavioral data found in the ${daysBack} days before this event. Try logging entries and re-running your report cards.</div>`;
+    if (!days.length || !Object.keys(allElements).length) {
+      html = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;padding:12px;">No behavioral data found in the ${daysBack} days before this event. Try logging entries and re-running your report cards.</div>`;
+    }
+
     document.getElementById("analysisBody").innerHTML = html;
     document.getElementById("analysisCard").style.display = "block";
   } catch(err) {

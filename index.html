@@ -225,7 +225,7 @@
 <div class="header">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
     <img src="icon-192.png" style="width:72px;height:72px;border-radius:16px;flex-shrink:0;" />
-    <div class="header-label">My BIO Performance</div>
+    <div class="header-label">My BIO Performance<sup style="font-size:12px;">©</sup></div>
   </div>
   <h1 class="serif">Your Behavioral Journal</h1>
 
@@ -366,15 +366,20 @@
         <input id="suppQtyAdd" type="text" maxlength="2" value="1"
           style="padding:10px 8px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:40px;text-align:center;" />
       </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Serv Size</div>
+        <input id="suppServSizeAdd" type="text" maxlength="3" placeholder="2"
+          style="padding:10px 8px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:48px;text-align:center;" />
+      </div>
       <div style="display:flex;flex-direction:column;gap:4px;flex:1;">
         <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Description</div>
         <input id="suppDescAdd" type="text" placeholder="optional note"
           style="padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:100%;box-sizing:border-box;" />
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Dose</div>
-        <input id="suppDose" type="text" maxlength="7" placeholder="400mg"
-          style="padding:10px 8px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:68px;" />
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Label Dose</div>
+        <input id="suppDose" type="text" maxlength="8" placeholder="1000mg"
+          style="padding:10px 8px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:72px;" />
       </div>
     </div>
     <button onclick="addSupplement()" style="width:100%;padding:11px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">Add to List</button>
@@ -591,7 +596,7 @@
 
     <!-- Section 1 -->
     <div style="margin-bottom:20px;">
-      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">1 · What Is My BIO Performance?</div>
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">1 · What Is My BIO Performance<sup style="font-size:9px;">©</sup>?</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:8px;">A personal behavioral journal that runs entirely in your browser. Track daily life events across six categories, score your focal performance events, and use AI to surface patterns in your food, sleep, stress, add-ons, supplements, and exercise data.</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;">Everything is stored privately on your device. No account, no login, no data sent anywhere except when you explicitly request an AI analysis or sync with Strava.</div>
     </div>
@@ -1222,7 +1227,7 @@ function confirmLabelScan() {
   const dailyPeriods = includeDaily ? [{ from: Date.now(), to: null }] : [];
   const name = labelScanData.name || "Supplement";
   const ingredients = labelScanData.ingredients || [];
-  supplements.push({ id: Date.now(), name, dose: "", qty, desc: "", ingredients, includeDaily, dailyPeriods });
+  supplements.push({ id: Date.now(), name, dose: "", servSize: "1", qty, desc: "", ingredients, includeDaily, dailyPeriods });
   saveSupplements();
   document.getElementById("labelScanResult").style.display = "none";
   labelScanData = null;
@@ -1231,15 +1236,17 @@ function confirmLabelScan() {
 }
 
 function addSupplement() {
-  const name = document.getElementById("suppName").value.trim();
-  const dose = document.getElementById("suppDose").value.trim();
-  const qty  = document.getElementById("suppQtyAdd")?.value.trim() || "1";
-  const desc = document.getElementById("suppDescAdd")?.value.trim() || "";
+  const name     = document.getElementById("suppName").value.trim();
+  const dose     = document.getElementById("suppDose").value.trim();
+  const servSize = document.getElementById("suppServSizeAdd")?.value.trim() || "1";
+  const qty      = document.getElementById("suppQtyAdd")?.value.trim() || "1";
+  const desc     = document.getElementById("suppDescAdd")?.value.trim() || "";
   if (!name) return;
-  supplements.push({ id: Date.now(), name, dose, qty, desc });
+  supplements.push({ id: Date.now(), name, dose, servSize, qty, desc });
   saveSupplements();
   document.getElementById("suppName").value = "";
   document.getElementById("suppDose").value = "";
+  if (document.getElementById("suppServSizeAdd")) document.getElementById("suppServSizeAdd").value = "";
   if (document.getElementById("suppQtyAdd")) document.getElementById("suppQtyAdd").value = "1";
   if (document.getElementById("suppDescAdd")) document.getElementById("suppDescAdd").value = "";
 }
@@ -1248,12 +1255,13 @@ function deleteSupplement(id) {
   saveSupplements();
 }
 function calcServingRatio(qty, servSize) {
+  // ratio = fraction of label serving the user actually takes
+  // e.g. qty=1, servSize=2 → ratio=0.5 (half a serving)
   const q = parseFloat(qty) || 1;
   const s = parseFloat(servSize) || 1;
   return q / s;
 }
 function formatRatio(ratio) {
-  // Express as fraction or decimal serving e.g. "1 serving", "0.5 serving", "1.3 servings"
   const rounded = Math.round(ratio * 1000) / 1000;
   const label = rounded === 1 ? "serving" : "servings";
   return rounded + " " + label;
@@ -1268,19 +1276,37 @@ function scaleIngredientAmount(amount, ratio) {
   const scaled = Math.round(num * ratio * 1000) / 1000;
   return scaled + unit;
 }
-function calcSuppTotal(qty, servSize) {
-  if (!servSize || !servSize.trim()) return "—";
+function calcSuppTotal(qty, servSize, labelDose) {
+  // actual dose = (qty / servSize) × labelDose
+  // e.g. qty=1, servSize=2, labelDose="1000mg" → 500mg
   const ratio = calcServingRatio(qty, servSize);
-  return formatRatio(ratio);
+  if (!labelDose || !labelDose.trim()) {
+    // No dose — just show servings taken
+    if (ratio === 1) return "1 serving";
+    return Math.round(ratio * 1000) / 1000 + " servings";
+  }
+  const match = labelDose.trim().match(/^([0-9]+\.?[0-9]*)\s*([a-zA-Zµμ%].*)?/);
+  if (match) {
+    const num = parseFloat(match[1]);
+    const unit = match[2] || "";
+    if (!isNaN(num)) {
+      const actual = Math.round(num * ratio * 1000) / 1000;
+      return actual + unit;
+    }
+  }
+  // Non-numeric dose
+  return ratio === 1 ? labelDose : Math.round(ratio * 1000) / 1000 + " × " + labelDose;
 }
 function updateSuppTotal(id) {
   const qtyEl   = document.getElementById("suppQty_"     + id);
+  const ssEl    = document.getElementById("suppServSize_"+ id);
   const doseEl  = document.getElementById("suppDoseLog_" + id);
   const totalEl = document.getElementById("suppTotal_"   + id);
   if (!totalEl) return;
   const qty      = qtyEl  ? qtyEl.value  : "1";
-  const servSize = doseEl ? doseEl.value : "";
-  totalEl.textContent = calcSuppTotal(qty, servSize);
+  const servSize = ssEl   ? ssEl.value   : "1";
+  const labelDose= doseEl ? doseEl.value : "";
+  totalEl.textContent = calcSuppTotal(qty, servSize, labelDose);
   // Also update ingredient amounts in table
   const s = supplements.find(s => String(s.id) === String(id));
   if (!s || !s.ingredients || !s.ingredients.length) return;
@@ -1329,19 +1355,22 @@ function logCheckedSupplements() {
   if (!checked.length) return;
   // Persist any unsaved field edits before logging
   supplements.forEach(s => {
-    const qty  = document.getElementById("suppQty_"     + s.id)?.value.trim();
-    const desc = document.getElementById("suppDesc_"    + s.id)?.value.trim();
-    const dose = document.getElementById("suppDoseLog_" + s.id)?.value.trim();
-    if (qty  !== undefined) s.qty  = qty;
-    if (desc !== undefined) s.desc = desc;
-    if (dose !== undefined) s.dose = dose;
+    const qty      = document.getElementById("suppQty_"      + s.id)?.value.trim();
+    const desc     = document.getElementById("suppDesc_"     + s.id)?.value.trim();
+    const dose     = document.getElementById("suppDoseLog_"  + s.id)?.value.trim();
+    const servSize = document.getElementById("suppServSize_" + s.id)?.value.trim();
+    if (qty      !== undefined) s.qty      = qty;
+    if (desc     !== undefined) s.desc     = desc;
+    if (dose     !== undefined) s.dose     = dose;
+    if (servSize !== undefined) s.servSize = servSize;
   });
   localStorage.setItem("bl_supplements", JSON.stringify(supplements));
   checked.forEach(s => {
-    const qty      = s.qty  || "1";
-    const desc     = s.desc || "";
-    const servSize = s.dose || "";
-    const total    = servSize ? formatRatio(calcServingRatio(qty, servSize)) : (qty !== "1" ? qty + " units" : "");
+    const qty       = s.qty  || "1";
+    const desc      = s.desc || "";
+    const servSize  = s.servSize || "1";
+    const labelDose = s.dose || "";
+    const total     = labelDose ? calcSuppTotal(qty, servSize, labelDose) : (qty !== "1" ? qty + " units" : "");
     let note = `${s.name}`;
     if (total) note += ` — ${total}`;
     if (desc) note += `. ${desc}`;
@@ -1458,7 +1487,7 @@ function renderSuppQuickLog() {
             <button onclick="deleteSupplement(${s.id})" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:16px;padding:2px 4px;-webkit-tap-highlight-color:transparent;">×</button>
           </div>
 
-          <!-- Row 2: qty + description + dose -->
+          <!-- Row 2: qty + serv size + description + label dose + total -->
           <div style="display:flex;gap:6px;align-items:center;">
             <div style="display:flex;flex-direction:column;gap:2px;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Qty</span>
@@ -1467,6 +1496,14 @@ function renderSuppQuickLog() {
                 oninput="updateSuppTotal(${s.id})"
                 style="${inputStyle}width:32px;text-align:center;" />
             </div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Serv Size</span>
+              <input id="suppServSize_${s.id}" type="text" maxlength="3" value="${s.servSize || "1"}"
+                placeholder="2"
+                onblur="saveSuppField(${s.id},'servSize',this.value);updateSuppTotal(${s.id})"
+                oninput="updateSuppTotal(${s.id})"
+                style="${inputStyle}width:40px;text-align:center;" />
+            </div>
             <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Intended Purpose</span>
               <input id="suppDesc_${s.id}" type="text" placeholder="optional note" value="${s.desc || ""}"
@@ -1474,16 +1511,16 @@ function renderSuppQuickLog() {
                 style="${inputStyle}width:100%;box-sizing:border-box;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;">
-              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Serv Size (units)</span>
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Label Dose</span>
               <input id="suppDoseLog_${s.id}" type="text" maxlength="8" value="${s.dose || ""}"
-                placeholder="e.g. 500mg"
+                placeholder="1000mg"
                 onblur="saveSuppField(${s.id},'dose',this.value);updateSuppTotal(${s.id})"
-                style="${inputStyle}width:68px;" />
+                style="${inputStyle}width:64px;" />
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;">
-              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;letter-spacing:1px;text-transform:uppercase;">Total</span>
+              <span style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;letter-spacing:1px;text-transform:uppercase;">Your Dose</span>
               <div id="suppTotal_${s.id}" style="padding:6px 8px;border:1px solid rgba(58,154,154,0.3);border-radius:4px;background:rgba(58,154,154,0.06);font-size:12px;font-family:'DM Mono',monospace;color:#3A9A9A;min-width:52px;text-align:center;">
-                ${calcSuppTotal(s.qty, s.dose)}
+                ${calcSuppTotal(s.qty, s.servSize || "1", s.dose)}
               </div>
             </div>
           </div>
@@ -1509,7 +1546,7 @@ function renderSuppQuickLog() {
                 ${s.ingredients.map((i, idx) => `
                   <tr>
                     <td style="padding:6px 10px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:12px;color:#111;">${i.ingredient}</td>
-                    <td id="supp-ing-${s.id}-${idx}" style="padding:6px 10px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:12px;color:#555;font-family:'DM Mono',monospace;text-align:right;white-space:nowrap;">${scaleIngredientAmount(i.amount, calcServingRatio(s.qty||1, s.dose||1))}</td>
+                    <td id="supp-ing-${s.id}-${idx}" style="padding:6px 10px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:12px;color:#555;font-family:'DM Mono',monospace;text-align:right;white-space:nowrap;">${scaleIngredientAmount(i.amount, calcServingRatio(s.qty||1, s.servSize||1))}</td>
                   </tr>`).join("")}
               </tbody>
             </table>
@@ -2575,10 +2612,11 @@ function buildSuppReportLines() {
     ""
   ].filter(l => l !== undefined);
   sorted.forEach(s => {
-    const servSize = s.dose || "—";
+    const servSize  = s.servSize || "1";
+    const labelDose = s.dose || "—";
     const qty = s.qty || "1";
-    const ratio = calcServingRatio(qty, s.dose || "1");
-    const totalLabel = s.dose ? formatRatio(ratio) : "—";
+    const ratio = calcServingRatio(qty, servSize);
+    const totalLabel = s.dose ? calcSuppTotal(qty, servSize, s.dose) : "—";
     const daily = s.includeDaily ? "  [Daily]" : "";
     lines.push(s.name.toUpperCase());
     lines.push("  Serv Size: " + servSize + " units  |  Qty: " + qty + "  |  Total: " + totalLabel + daily);
@@ -2638,7 +2676,7 @@ async function generateIngredientReport() {
   const ingMap = {};
   supplements.forEach(s => {
     if (!s.ingredients || !s.ingredients.length) return;
-    const ratio = calcServingRatio(s.qty || "1", s.dose || "1");
+    const ratio = calcServingRatio(s.qty || "1", s.servSize || "1");
     s.ingredients.forEach(i => {
       const key = i.ingredient.toLowerCase().trim();
       if (!ingMap[key]) ingMap[key] = { displayName: i.ingredient, entries: [] };
@@ -2667,7 +2705,10 @@ async function generateIngredientReport() {
 
   const aof = getAreaOfFocus();
   const suppTimingList = [...supplements].sort((a,b) => a.name.localeCompare(b.name))
-    .map(s => `- ${s.name}: ${s.desc || "general use"}`).join("\n");
+    .map(s => {
+      const yourDose = s.dose ? calcSuppTotal(s.qty || "1", s.servSize || "1", s.dose) : "";
+      return `- ${s.name}${yourDose ? ` (${yourDose})` : ""}: ${s.desc || "general use"}`;
+    }).join("\n");
 
   const prompt = hasIngredients
     ? `You are a sports nutrition and health scientist. Below is my complete supplement ingredient stack. Amounts listed are my NET TOTAL intake per session.

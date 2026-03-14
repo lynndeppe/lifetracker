@@ -2742,7 +2742,13 @@ function renderIngredientReport(text) {
   const aboveItems = ingRecords.filter(r => /ABOVE/i.test(r.status));
   const belowItems = ingRecords.filter(r => /BELOW/i.test(r.status));
 
+  // DEBUG — remove after confirming fix
+  const debugSample = ingRecords.slice(0, 5).map(r =>
+    `${r.name} | status="${r.status}" | itake="${r.itake}"`
+  ).join("<br>");
+
   let summaryHtml = `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:6px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Above and Below Report</div>`;
+  summaryHtml += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#aaa;margin-bottom:8px;background:#f5f5f5;padding:6px;border-radius:4px;">DEBUG: ${ingRecords.length} ingredients parsed, ${aboveItems.length} above, ${belowItems.length} below<br>${debugSample}</div>`;
 
   if (!aboveItems.length && !belowItems.length) {
     summaryHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:10px;">All ingredients within range or no clear RDA.</div>`;
@@ -3438,7 +3444,8 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
           ${!showPanel ? (stravaImportedIds.has(String(a.id))
-            ? `<button id="strava-save-${a.id}" disabled style="padding:6px 10px;background:#7ABF3A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;opacity:0.8;">Imported ✓</button>`
+            ? `<button id="strava-save-${a.id}" disabled style="padding:6px 10px;background:#7ABF3A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;opacity:0.8;">Imported ✓</button>
+               <button onclick="stravaRateActivity(${a.id})" style="padding:6px 10px;background:none;border:1px solid #7ABF3A;color:#7ABF3A;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Rate</button>`
             : `<button id="strava-save-${a.id}" onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>`
           ) : ""}
           <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
@@ -3478,7 +3485,7 @@ function applyStravaScoreHighlights(activityId) {
   });
 }
 function saveStravaScores(activityId, entryId, skip) {
-  if (!skip) {
+  if (!skip && entryId) {
     const scores = stravaScoreTemp[activityId] || {};
     const entry = entries.find(e => e.id === entryId);
     if (entry) { entry.scores = scores; saveEntries(); }
@@ -3490,10 +3497,42 @@ function saveStravaScores(activityId, entryId, skip) {
   renderStravaActivities(cached, 0);
 }
 
+function stravaRateActivity(activityId) {
+  // Find the matching entry for this activity
+  const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+  const a = cached.find(x => String(x.id) === String(activityId));
+  if (!a) { showToast("Activity not found — try reloading."); return; }
+
+  // Find the matching entry by note prefix or by strava suppId fallback
+  const activityTs = a.start_date
+    ? new Date(a.start_date).getTime()
+    : new Date(a.start_date_local).getTime();
+
+  // Match entry: exercise category, closest timestamp to activity date
+  const matchedEntry = entries
+    .filter(e => e.category === "exercise")
+    .sort((a, b) => Math.abs(a.ts - activityTs) - Math.abs(b.ts - activityTs))[0];
+
+  const entryId = matchedEntry ? matchedEntry.id : null;
+
+  // Pre-load existing scores into stravaScoreTemp
+  delete stravaScoreTemp[activityId];
+  if (matchedEntry && matchedEntry.scores && Object.keys(matchedEntry.scores).length) {
+    stravaScoreTemp[activityId] = { ...matchedEntry.scores };
+  }
+
+  stravaOpenPanelActivityId = activityId;
+  renderStravaActivities(cached, 0, activityId, entryId);
+  applyStravaScoreHighlights(activityId);
+}
+
 function stravaDeleteActivity(activityId) {
   const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
   const updated = cached.filter(a => a.id !== activityId);
   localStorage.setItem("strava_last_activities", JSON.stringify(updated));
+  // Remove from imported set so Save button resets to red if activity reloads
+  stravaImportedIds.delete(String(activityId));
+  localStorage.setItem("strava_imported_ids", JSON.stringify([...stravaImportedIds]));
   renderStravaActivities(updated, 0);
 }
 

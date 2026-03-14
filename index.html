@@ -546,6 +546,15 @@
       <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Data Management</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Back up and restore your journal entries and settings.</div>
 
+      <!-- Storage Bar -->
+      <div style="margin-bottom:20px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#555;text-transform:uppercase;font-weight:600;margin-bottom:10px;">Storage Used</div>
+        <div id="storageBar" style="width:100%;height:18px;background:rgba(0,0,0,0.07);border-radius:9px;overflow:hidden;margin-bottom:8px;position:relative;">
+          <div id="storageBarFill" style="height:100%;width:0%;border-radius:9px;background:#3A9A9A;transition:width 0.4s ease;"></div>
+        </div>
+        <div id="storageDetails" style="font-family:'DM Mono',monospace;font-size:9px;color:#777;line-height:1.8;"></div>
+      </div>
+
       <!-- Backup -->
       <div style="margin-bottom:12px;">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#555;text-transform:uppercase;font-weight:600;margin-bottom:6px;">Backup</div>
@@ -934,6 +943,7 @@ function showSubTab(name) {
     if (label) label.textContent = last ? "Last backup: " + last : "No backup yet";
     const aof = document.getElementById("areaOfFocus");
     if (aof) aof.value = getAreaOfFocus();
+    renderStorageBar();
   }, 50);
   if (name === "history") renderHistory();
 }
@@ -2418,6 +2428,66 @@ function saveAreaOfFocus() {
 }
 function getAreaOfFocus() {
   return localStorage.getItem("bl_area_of_focus") || "";
+}
+
+function renderStorageBar() {
+  const fill = document.getElementById("storageBarFill");
+  const details = document.getElementById("storageDetails");
+  if (!fill || !details) return;
+
+  // localStorage is ~5MB per origin on most browsers
+  const QUOTA_BYTES = 5 * 1024 * 1024;
+
+  // Measure each key group
+  const groups = [
+    { label: "Journal Entries",   keys: ["bl_entries"],                          color: "#7C9CBF" },
+    { label: "Supplements",       keys: ["bl_supplements"],                       color: "#3A9A9A" },
+    { label: "Report Cache",      keys: ["bl_report_food","bl_report_sleep","bl_report_stress","bl_report_substance","bl_report_exercise","bl_report_focal"], color: "#8BAF7C" },
+    { label: "Strava",            keys: ["strava_last_activities","strava_token","strava_imported_ids"], color: "#FC4C02" },
+    { label: "Settings & Other",  keys: ["bl_ranges","bl_area_of_focus","bl_last_backup","bl_last_auto_log"], color: "#BF9C7C" },
+  ];
+
+  const fmt = bytes => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+  };
+
+  // Measure every key in localStorage for total
+  let totalBytes = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    const v = localStorage.getItem(k) || "";
+    totalBytes += (k.length + v.length) * 2; // UTF-16 chars = 2 bytes each
+  }
+
+  const usedPct = Math.min((totalBytes / QUOTA_BYTES) * 100, 100);
+  const barColor = usedPct > 85 ? "#D9534F" : usedPct > 65 ? "#C9A800" : "#3A9A9A";
+
+  fill.style.width = usedPct.toFixed(1) + "%";
+  fill.style.background = barColor;
+
+  // Per-group sizes
+  const groupRows = groups.map(g => {
+    let size = 0;
+    g.keys.forEach(k => {
+      const v = localStorage.getItem(k) || "";
+      size += (k.length + v.length) * 2;
+    });
+    if (!size) return "";
+    const pct = ((size / QUOTA_BYTES) * 100).toFixed(1);
+    return `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">
+      <span style="width:8px;height:8px;border-radius:50%;background:${g.color};display:inline-block;flex-shrink:0;"></span>
+      <span>${g.label}: <strong>${fmt(size)}</strong> (${pct}%)</span>
+    </span>`;
+  }).filter(Boolean).join("");
+
+  details.innerHTML = `
+    <div style="margin-bottom:4px;">
+      <strong style="color:${barColor};">${fmt(totalBytes)}</strong>
+      <span style="color:#aaa;"> used of ~${fmt(QUOTA_BYTES)} available (${usedPct.toFixed(1)}%)</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:2px 0;">${groupRows}</div>`;
 }
 
 function backupData() {

@@ -141,18 +141,19 @@
   }
 
   /* Exercise scores */
-  .scores-card { padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 14px; }
-  .scores-title { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; font-family: 'DM Mono', monospace; }
-  .score-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .score-label { font-size: 12px; color: #A09080; font-family: 'DM Mono', monospace; }
-  .score-btns { display: flex; gap: 5px; }
+  .scores-card { padding: 16px; background: #F0EEEB; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; margin-bottom: 14px; }
+  .scores-title { font-size: 9px; letter-spacing: 2px; color: #888; text-transform: uppercase; margin-bottom: 14px; font-family: 'DM Mono', monospace; font-weight: 700; }
+  .score-row { margin-bottom: 12px; }
+  .score-label { font-size: 9px; color: #888; font-family: 'DM Mono', monospace; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 5px; }
+  .score-btns { display: flex; gap: 6px; }
   .score-btn {
-    width: 32px; height: 32px; border-radius: 50%; border: none;
-    background: rgba(255,255,255,0.06); color: var(--muted);
-    font-family: 'DM Mono', monospace; font-size: 12px; cursor: pointer;
+    flex: 1; height: 36px; border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.12);
+    background: white; color: #555;
+    font-family: 'DM Mono', monospace; font-size: 13px; cursor: pointer;
     transition: all 0.15s; -webkit-tap-highlight-color: transparent;
   }
-  .score-btn.selected { background: #8B6914; color: #FFF8EE; }
+  .score-btn.selected { background: #7ABF3A; color: white; border-color: #7ABF3A; }
 
   /* Save button */
   .save-btn {
@@ -2600,13 +2601,7 @@ async function generateIngredientReport() {
   const prompt = hasIngredients
     ? `You are a sports nutrition and health scientist. Below is my complete supplement ingredient stack. Amounts listed are my NET TOTAL intake per session.
 
-YOUR TASK — respond in exactly this structure:
-
-## ABOVE AND BELOW REPORT
-List ONLY ingredients that are ABOVE or BELOW the recommended range (skip those within range or unknown). Use this format:
-ABOVE: [Ingredient Name] — [my amount] vs [rec range] — [one-line caution]
-BELOW: [Ingredient Name] — [my amount] vs [rec range] — [one-line note]
-If none are above or below, write "All ingredients within range or no clear RDA."
+YOUR TASK - respond with only the following section:
 
 ## INGREDIENT GROUPS
 Group ingredients into these categories ONLY (skip "Total Fat", "Cholesterol", and "Other Nutrients/Components"):
@@ -2619,7 +2614,7 @@ Group ingredients into these categories ONLY (skip "Total Fat", "Cholesterol", a
 - Performance & Energy Compounds
 - Other (for anything that does not fit above)
 
-For each ingredient within a group use exactly this format:
+For each ingredient within a group use exactly this format (indented with 2 spaces):
 INGREDIENT NAME
   I take: [amount]
   Rec. dose: [range]
@@ -2627,9 +2622,7 @@ INGREDIENT NAME
   Status: [WITHIN RANGE / BELOW RANGE / ABOVE RANGE / UNKNOWN]
   Timing: [best time of day to take, max 12 words${aof ? `, considering area of focus: "${aof}"` : ""}]
 
-Do not include a separate timing section at the end. Timing is inline above only.
-Exclude any ingredient that belongs to "Total Fat", "Cholesterol", or "Other Nutrients/Components".
-Be factual, concise, and science-based. Do not recommend purchasing anything.
+Be thorough - include every ingredient. Be factual, concise, and science-based. Do not recommend purchasing anything. Do not add any preamble or summary sections.
 
 MY NET INGREDIENT TOTALS:
 ${ingLines}
@@ -2704,108 +2697,139 @@ Be factual and science-based.`;
 }
 
 function renderIngredientReport(text) {
-  const lines = text.split("\n");
-  let html = "";
-  let inAboveBelow = false;
+  // ── Pass 1: strip any AI-generated Above/Below section, parse ingredient blocks ──
+  // Remove the AI's own summary section (## ABOVE AND BELOW REPORT ... ## INGREDIENT GROUPS)
+  const cleaned = text.replace(/^##\s+ABOVE AND BELOW REPORT[\s\S]*?(?=^##\s+INGREDIENT GROUPS)/im, "");
 
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const line = raw.trim();
-
-    // Section headings (## ...)
-    if (/^##\s+ABOVE AND BELOW REPORT/i.test(line)) {
-      inAboveBelow = true;
-      html += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:6px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Above and Below Report</div>`;
-      continue;
+  // Parse every ingredient block to collect status, name, "I take", "Rec. dose"
+  // An ingredient block starts with a non-indented, non-heading, non-empty line
+  // followed by indented detail lines
+  const ingRecords = []; // { name, status, itake, recdose }
+  const blockLines = cleaned.split("\n");
+  let cur = null;
+  for (const raw of blockLines) {
+    const line = raw.trim().replace(/\*\*/g, "").replace(/\*/g, "");
+    if (!line) continue;
+    // Detect indented field lines
+    if (/^\s/.test(raw)) {
+      if (!cur) continue;
+      const m = line.match(/^(I take|Rec\.?\s*dose?|Recommended[^:]*|Status|Function|Timing)\s*:\s*(.*)/i);
+      if (!m) continue;
+      const key = m[1].toLowerCase(); const val = m[2].trim();
+      if (/^i take/i.test(key))        cur.itake   = val;
+      if (/^rec/i.test(key))           cur.recdose = val;
+      if (/^status/i.test(key))        cur.status  = val.toUpperCase();
+      if (/^function/i.test(key))      cur.func    = val;
+      if (/^timing/i.test(key))        cur.timing  = val;
+    } else {
+      // Non-indented line — could be ingredient name or section heading
+      if (/^#{1,3}\s/.test(line) || /^[-*]/.test(line)) { cur = null; continue; }
+      // Skip lines that look like field labels without indent (malformed)
+      if (/^(I take|Rec\.|Status|Function|Timing)/i.test(line)) continue;
+      // New ingredient name
+      cur = { name: formatInline(line), status: "", itake: "", recdose: "", func: "", timing: "" };
+      ingRecords.push(cur);
     }
+  }
+
+  // ── Build summary from parsed data — ALL above/below, ABOVE first then BELOW ──
+  const aboveItems = ingRecords.filter(r => /ABOVE/i.test(r.status));
+  const belowItems = ingRecords.filter(r => /BELOW/i.test(r.status));
+
+  let summaryHtml = `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:6px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Above and Below Report</div>`;
+
+  if (!aboveItems.length && !belowItems.length) {
+    summaryHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:10px;">All ingredients within range or no clear RDA.</div>`;
+  } else {
+    aboveItems.forEach(r => {
+      const detail = [r.itake ? `I take: ${r.itake}` : "", r.recdose ? `Rec: ${r.recdose}` : ""].filter(Boolean).join("  ·  ");
+      summaryHtml += `<div style="margin-bottom:6px;display:flex;gap:6px;align-items:baseline;">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:#D9534F;white-space:nowrap;">ABOVE</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;"><strong>${escHtml(r.name)}</strong>${detail ? `  <span style="color:#777;">${escHtml(detail)}</span>` : ""}</span>
+      </div>`;
+    });
+    belowItems.forEach(r => {
+      const detail = [r.itake ? `I take: ${r.itake}` : "", r.recdose ? `Rec: ${r.recdose}` : ""].filter(Boolean).join("  ·  ");
+      summaryHtml += `<div style="margin-bottom:6px;display:flex;gap:6px;align-items:baseline;">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:#C9A800;white-space:nowrap;">BELOW</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;"><strong>${escHtml(r.name)}</strong>${detail ? `  <span style="color:#777;">${escHtml(detail)}</span>` : ""}</span>
+      </div>`;
+    });
+  }
+
+  // ── Pass 2: render the detail section (cleaned text, no AI summary block) ──
+  const lines = cleaned.split("\n");
+  let detailHtml = "";
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    const stripped = line.replace(/\*\*/g, "").replace(/\*/g, "");
+
+    // ## section headings
     if (/^##\s+INGREDIENT GROUPS/i.test(line)) {
-      inAboveBelow = false;
-      html += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Ingredient Groups</div>`;
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Ingredient Groups</div>`;
       continue;
     }
     if (/^##\s+/.test(line)) {
-      inAboveBelow = false;
-      const heading = line.replace(/^##\s+/, "");
-      html += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ ${escHtml(heading)}</div>`;
+      const heading = stripped.replace(/^##\s+/, "");
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ ${escHtml(heading)}</div>`;
       continue;
     }
-
-    // Single # headings — ingredient category group labels
+    // # group label headings
     if (/^#\s+/.test(line)) {
-      inAboveBelow = false;
-      const heading = line.replace(/^#\s+/, "");
-      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
+      const heading = stripped.replace(/^#\s+/, "");
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
       continue;
     }
-
-    // Bold category group from ** ** heading
+    // **Bold-only line** = category group heading
     if (/^\*\*[^*]+\*\*$/.test(line)) {
-      inAboveBelow = false;
-      const heading = line.replace(/\*\*/g, "");
-      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
+      const heading = stripped;
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
       continue;
     }
-
-    // ABOVE/BELOW lines in the summary section
-    if (inAboveBelow) {
-      if (/^ABOVE:/i.test(line)) {
-        const content = line.replace(/^ABOVE:\s*/i, "");
-        html += `<div style="margin-bottom:5px;"><span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:#D9534F;">ABOVE</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;"> — ${escHtml(content)}</span></div>`;
-        continue;
-      }
-      if (/^BELOW:/i.test(line)) {
-        const content = line.replace(/^BELOW:\s*/i, "");
-        html += `<div style="margin-bottom:5px;"><span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:#C9A800;">BELOW</span><span style="font-family:'DM Mono',monospace;font-size:10px;color:#333;"> — ${escHtml(content)}</span></div>`;
-        continue;
-      }
-    }
-
-    // Ingredient name line (ALL CAPS or Title Case standalone line not starting with spaces/dashes)
-    if (line && !/^\s/.test(raw) && !/^[-*#]/.test(line) && !/^(I take|Rec\.|Function|Status|Timing|ABOVE|BELOW|All ingredients)/i.test(line) && !inAboveBelow) {
-      html += `<div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;margin:10px 0 3px;">${escHtml(formatInline(line))}</div>`;
-      continue;
-    }
-
     // Indented detail lines
-    if (/^\s+(I take|Rec\.|Rec dose|Recommended|Function|Status|Timing)[\s:]/i.test(raw)) {
-      const colonIdx = line.indexOf(":");
-      if (colonIdx > -1) {
-        const label = line.slice(0, colonIdx).trim();
-        const value = line.slice(colonIdx + 1).trim();
-
-        let valueHtml = escHtml(value);
-        // Status colouring
-        if (/^status$/i.test(label)) {
-          if (/ABOVE/i.test(value)) valueHtml = `<strong style="color:#D9534F;">${escHtml(value)}</strong>`;
-          else if (/BELOW/i.test(value)) valueHtml = `<strong style="color:#C9A800;">${escHtml(value)}</strong>`;
-          else if (/WITHIN/i.test(value)) valueHtml = `<strong style="color:#3A9A9A;">${escHtml(value)}</strong>`;
-          else valueHtml = `<strong style="color:#888;">${escHtml(value)}</strong>`;
+    if (/^\s/.test(raw)) {
+      const m = stripped.match(/^(I take|Rec\.?\s*dose?|Recommended[^:]*|Function|Status|Timing)\s*:\s*(.*)/i);
+      if (m) {
+        const label = m[1].trim(); const value = m[2].trim();
+        if (/^timing/i.test(label)) {
+          detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#3A9A9A;font-weight:700;">Timing:</span> ${escHtml(value)}</div>`;
+        } else if (/^status/i.test(label)) {
+          let vHtml = escHtml(value);
+          if (/ABOVE/i.test(value))  vHtml = `<strong style="color:#D9534F;">${escHtml(value)}</strong>`;
+          else if (/BELOW/i.test(value)) vHtml = `<strong style="color:#C9A800;">${escHtml(value)}</strong>`;
+          else if (/WITHIN/i.test(value)) vHtml = `<strong style="color:#3A9A9A;">${escHtml(value)}</strong>`;
+          else vHtml = `<strong style="color:#888;">${escHtml(value)}</strong>`;
+          detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#888;">${escHtml(label)}:</span> ${vHtml}</div>`;
+        } else {
+          detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#888;">${escHtml(label)}:</span> ${escHtml(value)}</div>`;
         }
-        // Timing line — teal label
-        if (/^timing$/i.test(label)) {
-          html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#3A9A9A;font-weight:700;">Timing:</span> ${escHtml(value)}</div>`;
-          continue;
-        }
-        html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;"><span style="color:#888;">${escHtml(label)}:</span> ${valueHtml}</div>`;
         continue;
       }
-    }
-
-    // SUPPLEMENT — timing lines (timing-only mode)
-    if (/^.+\s+—\s+.+$/.test(line) && !inAboveBelow) {
-      const parts = line.split(/\s+—\s+/);
-      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#333;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span style="font-weight:700;color:#111;">${escHtml(parts[0])}</span> <span style="color:#3A9A9A;">—</span> ${escHtml(parts.slice(1).join(" — "))}</div>`;
+      // Indented plain text
+      if (stripped) detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:12px;margin-bottom:1px;">${escHtml(stripped)}</div>`;
       continue;
     }
-
-    // Plain text / fallback
-    if (line) {
-      html += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-bottom:2px;">${escHtml(formatInline(line))}</div>`;
-    } else {
-      html += `<div style="height:4px;"></div>`;
+    // Non-indented non-heading non-empty = ingredient name
+    if (stripped && !/^[-*]/.test(stripped) && !/^(I take|Rec\.|Status|Function|Timing)/i.test(stripped)) {
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;margin:10px 0 3px;">${escHtml(formatInline(stripped))}</div>`;
+      continue;
     }
+    // Bullet list items (e.g. category list items)
+    if (/^[-*]\s+/.test(stripped)) {
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;padding-left:8px;margin-bottom:2px;">${escHtml(stripped.replace(/^[-*]\s+/, ""))}</div>`;
+      continue;
+    }
+    // Timing-only mode: SUPPLEMENT — time
+    if (/^.+\s+[—–-]\s+.+$/.test(stripped)) {
+      const parts = stripped.split(/\s+[—–-]\s+/);
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#333;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span style="font-weight:700;color:#111;">${escHtml(parts[0])}</span> <span style="color:#3A9A9A;">—</span> ${escHtml(parts.slice(1).join(" — "))}</div>`;
+      continue;
+    }
+    if (!stripped) detailHtml += `<div style="height:4px;"></div>`;
   }
-  return html;
+
+  return summaryHtml + detailHtml;
 }
 
 function escHtml(s) {
@@ -3377,23 +3401,23 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
     const stats = [dist, duration, pace, hr, maxHr, elev].filter(Boolean).join(" · ");
     const showPanel = openScoreActivityId === a.id;
     const scorePanel = showPanel ? `
-      <div id="strava-score-panel-${a.id}" style="margin-top:10px;padding:14px;border-top:1px solid rgba(0,0,0,0.08);background:var(--card);border-radius:6px;">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Rate This Experience</div>
+      <div id="strava-score-panel-${a.id}" style="margin-top:10px;padding:16px;border-top:1px solid rgba(0,0,0,0.08);background:#F0EEEB;border-radius:8px;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:14px;font-weight:700;">Rate This Experience</div>
         ${METRICS.map(m => `
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <span style="font-size:12px;color:#A09080;font-family:'DM Mono',monospace;">${m}</span>
-            <div style="display:flex;gap:5px;">
+          <div style="margin-bottom:12px;">
+            <span style="display:block;font-family:'DM Mono',monospace;font-size:9px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">${m}</span>
+            <div style="display:flex;gap:6px;">
               ${[1,2,3,4,5].map(v => `
                 <button id="strava-score-${a.id}-${m.replace(/ /g,'_')}-${v}"
                   onclick="setStravaScore(${a.id},'${m}',${v})"
-                  style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.06);color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;">${v}</button>
+                  style="flex:1;height:36px;border-radius:4px;border:1px solid rgba(0,0,0,0.12);background:white;color:#555;font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;">${v}</button>
               `).join("")}
             </div>
           </div>
         `).join("")}
         <button onclick="saveStravaScores(${a.id},${openScoreEntryId})"
           style="width:100%;margin-top:4px;padding:14px;background:#7ABF3A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">
-          Save Entry
+          Save Scores
         </button>
         <button onclick="saveStravaScores(${a.id},${openScoreEntryId},true)"
           style="width:100%;margin-top:6px;padding:9px;background:none;border:1px solid rgba(0,0,0,0.12);border-radius:6px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;">
@@ -3409,7 +3433,7 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;">${stats}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
-          ${!showPanel ? (stravaImportedIds.has(a.id)
+          ${!showPanel ? (stravaImportedIds.has(String(a.id))
             ? `<button id="strava-save-${a.id}" disabled style="padding:6px 10px;background:#7ABF3A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;opacity:0.8;">Imported ✓</button>`
             : `<button id="strava-save-${a.id}" onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>`
           ) : ""}
@@ -3425,8 +3449,8 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
 // Track strava scores being set inline
 const stravaScoreTemp = {};
 const stravaImported = new Set();
-// Load persisted imported IDs from localStorage
-const stravaImportedIds = new Set(JSON.parse(localStorage.getItem("strava_imported_ids") || "[]"));
+// Load persisted imported IDs from localStorage — store as strings for reliable Set.has()
+const stravaImportedIds = new Set(JSON.parse(localStorage.getItem("strava_imported_ids") || "[]").map(String));
 function setStravaScore(activityId, metric, val) {
   if (!stravaScoreTemp[activityId]) stravaScoreTemp[activityId] = {};
   stravaScoreTemp[activityId][metric] = val;
@@ -3435,9 +3459,9 @@ function setStravaScore(activityId, metric, val) {
     const btn = document.getElementById(`strava-score-${activityId}-${metric.replace(/ /g,'_')}-${v}`);
     if (!btn) return;
     const selected = v === val;
-    btn.style.background   = selected ? "#8B6914" : "rgba(255,255,255,0.06)";
-    btn.style.color        = selected ? "#FFF8EE" : "var(--muted)";
-    btn.style.borderColor  = selected ? "#8B6914" : "transparent";
+    btn.style.background  = selected ? "#7ABF3A" : "white";
+    btn.style.color       = selected ? "white"   : "#555";
+    btn.style.borderColor = selected ? "#7ABF3A" : "rgba(0,0,0,0.12)";
   });
 }
 function saveStravaScores(activityId, entryId, skip) {
@@ -3486,7 +3510,7 @@ function stravaImportAsFocalEvent(activityId) {
   saveEntries();
 
   // Toggle button label to Imported
-  stravaImportedIds.add(activityId);
+  stravaImportedIds.add(String(activityId));
   localStorage.setItem("strava_imported_ids", JSON.stringify([...stravaImportedIds]));
   const saveBtn = document.getElementById(`strava-save-${activityId}`);
   if (saveBtn) { saveBtn.textContent = "Imported ✓"; saveBtn.disabled = true; saveBtn.style.background = "#7ABF3A"; }

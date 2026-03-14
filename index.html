@@ -3262,36 +3262,36 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
   const typeIcon = { Run:"🏃", Ride:"🚴", Swim:"🏊", Walk:"🚶", Hike:"🥾", WeightTraining:"🏋️", Workout:"⚡" };
   const cards = activities.map(a => {
     const date = new Date(a.start_date_local).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
-    const dist = a.distance ? (a.distance/1000).toFixed(2)+"km" : "";
-    const duration = a.moving_time ? Math.floor(a.moving_time/60)+"min" : "";
-    const hr = a.average_heartrate ? "♥"+Math.round(a.average_heartrate)+"bpm avg" : "";
-    const maxHr = a.max_heartrate ? "♥"+Math.round(a.max_heartrate)+"bpm max" : "";
-    const elev = a.total_elevation_gain ? "↑"+Math.round(a.total_elevation_gain)+"m elev" : "";
-    const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed) : "";
+    const dist = a.distance ? (a.distance / 1609.344).toFixed(2) + " mi" : "";
+    const duration = a.moving_time ? Math.floor(a.moving_time/60) + "min" : "";
+    const hr = a.average_heartrate ? "♥" + Math.round(a.average_heartrate) + "bpm avg" : "";
+    const maxHr = a.max_heartrate ? "♥" + Math.round(a.max_heartrate) + "bpm max" : "";
+    const elev = a.total_elevation_gain ? "↑" + Math.round(a.total_elevation_gain * 3.28084) + "ft elev" : "";
+    const pace = (a.type === "Run" && a.average_speed) ? paceFmt(a.average_speed) : "";
     const icon = typeIcon[a.type] || "⚡";
     const stats = [dist, duration, pace, hr, maxHr, elev].filter(Boolean).join(" · ");
     const showPanel = openScoreActivityId === a.id;
     const scorePanel = showPanel ? `
-      <div id="strava-score-panel-${a.id}" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.08);">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Rate this experience</div>
+      <div id="strava-score-panel-${a.id}" style="margin-top:10px;padding:14px;border-top:1px solid rgba(0,0,0,0.08);background:var(--card);border-radius:6px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Rate This Experience</div>
         ${METRICS.map(m => `
-          <div style="margin-bottom:8px;">
-            <div style="font-family:'DM Mono',monospace;font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">${m}</div>
-            <div style="display:flex;gap:4px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:12px;color:#A09080;font-family:'DM Mono',monospace;">${m}</span>
+            <div style="display:flex;gap:5px;">
               ${[1,2,3,4,5].map(v => `
                 <button id="strava-score-${a.id}-${m.replace(/ /g,'_')}-${v}"
                   onclick="setStravaScore(${a.id},'${m}',${v})"
-                  style="flex:1;padding:6px 0;border:1px solid rgba(0,0,0,0.12);border-radius:4px;background:white;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;">${v}</button>
+                  style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.06);color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;">${v}</button>
               `).join("")}
             </div>
           </div>
         `).join("")}
         <button onclick="saveStravaScores(${a.id},${openScoreEntryId})"
-          style="width:100%;margin-top:4px;padding:9px;background:#7ABF3A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">
-          Save Scores
+          style="width:100%;margin-top:4px;padding:14px;background:#7ABF3A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;">
+          Save Entry
         </button>
         <button onclick="saveStravaScores(${a.id},${openScoreEntryId},true)"
-          style="width:100%;margin-top:6px;padding:7px;background:none;border:1px solid rgba(0,0,0,0.12);border-radius:6px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;">
+          style="width:100%;margin-top:6px;padding:9px;background:none;border:1px solid rgba(0,0,0,0.12);border-radius:6px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;">
           Skip — Rate Later
         </button>
       </div>` : "";
@@ -3320,7 +3320,8 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
 // Track strava scores being set inline
 const stravaScoreTemp = {};
 const stravaImported = new Set();
-const stravaImportedIds = new Set(); // persists across re-renders
+// Load persisted imported IDs from localStorage
+const stravaImportedIds = new Set(JSON.parse(localStorage.getItem("strava_imported_ids") || "[]"));
 function setStravaScore(activityId, metric, val) {
   if (!stravaScoreTemp[activityId]) stravaScoreTemp[activityId] = {};
   stravaScoreTemp[activityId][metric] = val;
@@ -3329,9 +3330,9 @@ function setStravaScore(activityId, metric, val) {
     const btn = document.getElementById(`strava-score-${activityId}-${metric.replace(/ /g,'_')}-${v}`);
     if (!btn) return;
     const selected = v === val;
-    btn.style.background   = selected ? "#7ABF3A" : "white";
-    btn.style.color        = selected ? "white"   : "#111";
-    btn.style.borderColor  = selected ? "#7ABF3A" : "rgba(0,0,0,0.12)";
+    btn.style.background   = selected ? "#8B6914" : "rgba(255,255,255,0.06)";
+    btn.style.color        = selected ? "#FFF8EE" : "var(--muted)";
+    btn.style.borderColor  = selected ? "#8B6914" : "transparent";
   });
 }
 function saveStravaScores(activityId, entryId, skip) {
@@ -3355,22 +3356,22 @@ function stravaDeleteActivity(activityId) {
 
 function paceFmt(speed) {
   if (!speed) return "";
-  const secPerKm = 1000 / speed;
-  const min = Math.floor(secPerKm / 60);
-  const sec = Math.round(secPerKm % 60).toString().padStart(2, "0");
-  return min + ":" + sec + "/km";
+  const secPerMile = 1609.344 / speed;
+  const min = Math.floor(secPerMile / 60);
+  const sec = Math.round(secPerMile % 60).toString().padStart(2, "0");
+  return min + ":" + sec + "/mi";
 }
 
 function stravaImportAsFocalEvent(activityId) {
   const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
   const a = cached.find(x => x.id === activityId);
   if (!a) { alert("Reload activities and try again."); return; }
-  const dist = a.distance ? (a.distance/1000).toFixed(2)+"km" : "";
-  const duration = a.moving_time ? Math.floor(a.moving_time/60)+"min" : "";
-  const hr = a.average_heartrate ? Math.round(a.average_heartrate)+"bpm avg HR" : "";
-  const maxHr = a.max_heartrate ? Math.round(a.max_heartrate)+"bpm max HR" : "";
-  const elev = a.total_elevation_gain ? Math.round(a.total_elevation_gain)+"m elevation gain" : "";
-  const pace = (a.type==="Run" && a.average_speed) ? paceFmt(a.average_speed)+" pace" : "";
+  const dist = a.distance ? (a.distance / 1609.344).toFixed(2) + " mi" : "";
+  const duration = a.moving_time ? Math.floor(a.moving_time/60) + "min" : "";
+  const hr = a.average_heartrate ? Math.round(a.average_heartrate) + "bpm avg HR" : "";
+  const maxHr = a.max_heartrate ? Math.round(a.max_heartrate) + "bpm max HR" : "";
+  const elev = a.total_elevation_gain ? Math.round(a.total_elevation_gain * 3.28084) + "ft elevation gain" : "";
+  const pace = (a.type === "Run" && a.average_speed) ? paceFmt(a.average_speed) + " pace" : "";
   const note = [a.name, a.type, dist, duration, pace, hr, maxHr, elev].filter(Boolean).join(" · ");
   const activityTs = a.start_date ? new Date(a.start_date).getTime() : new Date(a.start_date_local).getTime();
 
@@ -3381,6 +3382,7 @@ function stravaImportAsFocalEvent(activityId) {
 
   // Toggle button label to Imported
   stravaImportedIds.add(activityId);
+  localStorage.setItem("strava_imported_ids", JSON.stringify([...stravaImportedIds]));
   const saveBtn = document.getElementById(`strava-save-${activityId}`);
   if (saveBtn) { saveBtn.textContent = "Imported ✓"; saveBtn.disabled = true; saveBtn.style.background = "#7ABF3A"; }
 

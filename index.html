@@ -3441,7 +3441,6 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
             ? `<button onclick="stravaUnimport(${a.id})" style="padding:6px 10px;background:#7ABF3A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;opacity:0.85;">Imported ✓</button>`
             : `<button id="strava-save-${a.id}" onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>`
           ) : ""}
-          <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
         </div>
       </div>
       ${scorePanel}

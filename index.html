@@ -187,7 +187,7 @@
   .entry-icon { font-size: 16px; margin-top: 2px; flex-shrink: 0; }
   .entry-time { font-size: 10px; color: var(--dim); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
   .entry-note { font-size: 13px; color: #111111; line-height: 1.55; }
-  .entry-cat { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1px; margin-bottom: 4px; }
+  .entry-cat { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 1px; margin-bottom: 4px; font-weight: 700; }
   .entry-scores { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
   .score-tag { font-size: 10px; font-family: 'DM Mono', monospace; color: #7CBFBF; background: rgba(124,191,191,0.08); padding: "3px 7px"; border-radius: 3px; padding: 3px 7px; }
   .delete-btn { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 18px; line-height: 1; flex-shrink: 0; -webkit-tap-highlight-color: transparent; padding: 2px 4px; }
@@ -2742,13 +2742,7 @@ function renderIngredientReport(text) {
   const aboveItems = ingRecords.filter(r => /ABOVE/i.test(r.status));
   const belowItems = ingRecords.filter(r => /BELOW/i.test(r.status));
 
-  // DEBUG — remove after confirming fix
-  const debugSample = ingRecords.slice(0, 5).map(r =>
-    `${r.name} | status="${r.status}" | itake="${r.itake}"`
-  ).join("<br>");
-
   let summaryHtml = `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:6px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ Above and Below Report</div>`;
-  summaryHtml += `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#aaa;margin-bottom:8px;background:#f5f5f5;padding:6px;border-radius:4px;">DEBUG: ${ingRecords.length} ingredients parsed, ${aboveItems.length} above, ${belowItems.length} below<br>${debugSample}</div>`;
 
   if (!aboveItems.length && !belowItems.length) {
     summaryHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:10px;">All ingredients within range or no clear RDA.</div>`;
@@ -2789,15 +2783,15 @@ function renderIngredientReport(text) {
       detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:18px 0 10px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.3);padding-bottom:6px;">▸ ${escHtml(heading)}</div>`;
       continue;
     }
-    // # group label headings
-    if (/^#\s+/.test(stripped)) {
-      const heading = stripped.replace(/^#\s+/, "");
-      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(heading)} —</div>`;
+    // ### or # group label headings — category names like "### Vitamins" or "# Vitamins"
+    if (/^#{1,3}\s+/.test(stripped)) {
+      const heading = stripped.replace(/^#{1,3}\s+/, "");
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:14px 0 6px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.18);padding-bottom:4px;">— ${escHtml(heading)} —</div>`;
       continue;
     }
-    // **Bold-only line** = category group heading
+    // **Bold-only line** = category group heading (check raw line before stripping)
     if (/^\*\*[^*]+\*\*$/.test(line)) {
-      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#777;margin:14px 0 6px;font-weight:700;">— ${escHtml(stripped)} —</div>`;
+      detailHtml += `<div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#3A9A9A;margin:14px 0 6px;font-weight:700;border-bottom:1px solid rgba(58,154,154,0.18);padding-bottom:4px;">— ${escHtml(stripped)} —</div>`;
       continue;
     }
     // Field lines — match regardless of indentation
@@ -3444,8 +3438,7 @@ function renderStravaActivities(activities, newCount, openScoreActivityId, openS
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
           ${!showPanel ? (stravaImportedIds.has(String(a.id))
-            ? `<button id="strava-save-${a.id}" disabled style="padding:6px 10px;background:#7ABF3A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;opacity:0.8;">Imported ✓</button>
-               <button onclick="stravaRateActivity(${a.id})" style="padding:6px 10px;background:none;border:1px solid #7ABF3A;color:#7ABF3A;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Rate</button>`
+            ? `<button onclick="stravaUnimport(${a.id})" style="padding:6px 10px;background:#7ABF3A;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;opacity:0.85;">Imported ✓</button>`
             : `<button id="strava-save-${a.id}" onclick="stravaImportAsFocalEvent(${a.id})" style="padding:6px 10px;background:#FC4C02;color:white;border:none;border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Save</button>`
           ) : ""}
           <button onclick="stravaDeleteActivity(${a.id})" style="padding:5px 10px;background:none;border:1px solid rgba(0,0,0,0.15);border-radius:4px;font-family:'DM Mono',monospace;font-size:9px;color:#999;cursor:pointer;text-transform:uppercase;white-space:nowrap;">Delete</button>
@@ -3530,10 +3523,14 @@ function stravaDeleteActivity(activityId) {
   const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
   const updated = cached.filter(a => a.id !== activityId);
   localStorage.setItem("strava_last_activities", JSON.stringify(updated));
-  // Remove from imported set so Save button resets to red if activity reloads
+  renderStravaActivities(updated, 0);
+}
+
+function stravaUnimport(activityId) {
   stravaImportedIds.delete(String(activityId));
   localStorage.setItem("strava_imported_ids", JSON.stringify([...stravaImportedIds]));
-  renderStravaActivities(updated, 0);
+  const cached = JSON.parse(localStorage.getItem("strava_last_activities") || "[]");
+  renderStravaActivities(cached, 0);
 }
 
 function paceFmt(speed) {

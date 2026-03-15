@@ -381,7 +381,7 @@
         <input id="suppDescAdd" type="text" placeholder="optional note"
           style="padding:10px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:100%;box-sizing:border-box;" />
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="display:flex;flex-direction:column;gap:4px;display:none;">
         <div style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Label Dose</div>
         <input id="suppDose" type="text" maxlength="8" placeholder="1000mg"
           style="padding:10px 8px;border:1px solid rgba(0,0,0,0.1);border-radius:6px;background:white;font-size:14px;font-family:'Georgia',serif;color:#111;outline:none;width:72px;" />
@@ -451,51 +451,64 @@
 
     <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
       <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Define Event Experience</div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Total must not exceed 15 &nbsp;|&nbsp; Remaining: <span id="rangeRemaining" style="color:#111;font-weight:600;">0</span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#777;margin-bottom:18px;">Set points per tier — total must equal 15 &nbsp;|&nbsp; Remaining: <span id="rangeRemaining" style="color:#111;font-weight:600;">0</span></div>
 
-      <!-- Unified bar with three draggable segments -->
       <div style="margin-bottom:20px;">
 
-        <!-- Labels row -->
-        <div style="display:flex;margin-bottom:8px;">
-          <div id="okLabel" style="display:flex;flex-direction:column;align-items:center;">
+        <!-- OK -->
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;font-weight:600;">OK</span>
             <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="okVal">1–5</span>
           </div>
-          <div style="flex:1;"></div>
-          <div id="goodLabel" style="display:flex;flex-direction:column;align-items:center;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="range" id="okRange" min="1" max="13" value="5" step="1"
+              oninput="updateRangeTiles()"
+              style="flex:1;accent-color:#999;height:6px;" />
+            <div style="width:30px;height:30px;border-radius:6px;background:#999;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:white;flex-shrink:0;" id="okTile">5</div>
+          </div>
+        </div>
+
+        <!-- Good -->
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#8BAF7C;text-transform:uppercase;font-weight:600;">Good</span>
             <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="goodVal">6–10</span>
           </div>
-          <div style="flex:1;"></div>
-          <div id="strongLabel" style="display:flex;flex-direction:column;align-items:center;">
-            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#7CBFBF;text-transform:uppercase;font-weight:600;">Strong</span>
-            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="strongVal">11–15</span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="range" id="goodRange" min="1" max="13" value="5" step="1"
+              oninput="updateRangeTiles()"
+              style="flex:1;accent-color:#8BAF7C;height:6px;" />
+            <div style="width:30px;height:30px;border-radius:6px;background:#8BAF7C;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:white;flex-shrink:0;" id="goodTile">5</div>
           </div>
         </div>
 
-        <!-- Unified coloured bar -->
-        <div id="rangeBar" style="position:relative;height:28px;border-radius:14px;overflow:visible;background:#e0d8cc;cursor:pointer;user-select:none;-webkit-user-select:none;"
-          onmousedown="rangeBarDown(event)" ontouchstart="rangeBarDown(event)">
-
-          <!-- Coloured fill segments -->
-          <div id="seg-ok" style="position:absolute;top:0;left:0;height:100%;background:#999;border-radius:14px 0 0 14px;"></div>
-          <div id="seg-good" style="position:absolute;top:0;height:100%;background:#8BAF7C;"></div>
-          <div id="seg-strong" style="position:absolute;top:0;height:100%;background:#7CBFBF;border-radius:0 14px 14px 0;"></div>
-
-          <!-- Handle 1: OK | Good boundary -->
-          <div id="handle1" style="position:absolute;top:50%;width:22px;height:22px;background:white;border-radius:50%;border:2px solid #999;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,0.2);cursor:ew-resize;touch-action:none;z-index:2;"></div>
-          <!-- Handle 2: Good | Strong boundary -->
-          <div id="handle2" style="position:absolute;top:50%;width:22px;height:22px;background:white;border-radius:50%;border:2px solid #7CBFBF;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,0.2);cursor:ew-resize;touch-action:none;z-index:2;"></div>
+        <!-- Strong -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#7CBFBF;text-transform:uppercase;font-weight:600;">Strong</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="strongVal">11–15</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="range" id="strongRange" min="1" max="13" value="5" step="1"
+              oninput="updateRangeTiles()"
+              style="flex:1;accent-color:#7CBFBF;height:6px;" />
+            <div style="width:30px;height:30px;border-radius:6px;background:#7CBFBF;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:white;flex-shrink:0;" id="strongTile">5</div>
+          </div>
         </div>
 
-        <!-- Scale labels -->
-        <div style="display:flex;justify-content:space-between;margin-top:4px;">
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">0</span>
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#999;">15</span>
+        <!-- Visual proportion bar -->
+        <div style="height:8px;border-radius:4px;overflow:hidden;display:flex;margin-bottom:4px;background:rgba(0,0,0,0.06);">
+          <div id="bar-ok"     style="background:#999;width:33.3%;transition:width 0.2s;"></div>
+          <div id="bar-good"   style="background:#8BAF7C;width:33.3%;transition:width 0.2s;"></div>
+          <div id="bar-strong" style="background:#7CBFBF;width:33.3%;transition:width 0.2s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:#bbb;">0</span>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:#bbb;">15</span>
         </div>
 
-        <!-- Hidden inputs kept for save/load compatibility -->
+        <!-- Hidden inputs for save/load compatibility -->
         <input type="hidden" id="okSlider" value="5">
         <input type="hidden" id="goodSlider" value="5">
         <input type="hidden" id="strongSlider" value="5">
@@ -960,144 +973,62 @@ function showSubTab(name) {
   if (name === "history") renderHistory();
 }
 
-// Experience range drag bar
-(function() {
-  let dragging = null;
+// Experience range sliders
+function updateRangeTiles() {
+  const ok     = parseInt(document.getElementById("okRange")?.value)     || 5;
+  const good   = parseInt(document.getElementById("goodRange")?.value)   || 5;
+  const strong = parseInt(document.getElementById("strongRange")?.value) || 5;
+  const total  = ok + good + strong;
+  const remaining = 15 - total;
 
-  function getBarValues() {
-    return {
-      ok:     parseInt(document.getElementById("okSlider").value)     || 5,
-      good:   parseInt(document.getElementById("goodSlider").value)   || 5,
-      strong: parseInt(document.getElementById("strongSlider").value) || 5,
-    };
-  }
+  document.getElementById("okTile").textContent     = ok;
+  document.getElementById("goodTile").textContent   = good;
+  document.getElementById("strongTile").textContent = strong;
 
-  function renderBar(ok, good, strong) {
-    const total = 15;
-    const p1 = (ok / total) * 100;
-    const p2 = ((ok + good) / total) * 100;
-    const p3 = ((ok + good + strong) / total) * 100;
-
-    const segOk = document.getElementById("seg-ok");
-    const segGood = document.getElementById("seg-good");
-    const segStrong = document.getElementById("seg-strong");
-    const h1 = document.getElementById("handle1");
-    const h2 = document.getElementById("handle2");
-
-    if (!segOk) return;
-
-    segOk.style.width = p1 + "%";
-    segGood.style.left = p1 + "%";
-    segGood.style.width = (p2 - p1) + "%";
-    segStrong.style.left = p2 + "%";
-    segStrong.style.width = (p3 - p2) + "%";
-
-    h1.style.left = p1 + "%";
-    h2.style.left = p2 + "%";
-
-    document.getElementById("okVal").textContent     = `1–${ok}`;
-    document.getElementById("goodVal").textContent   = `${ok+1}–${ok+good}`;
-    document.getElementById("strongVal").textContent = `${ok+good+1}–${ok+good+strong}`;
-
-    const remaining = 15 - (ok + good + strong);
-    const r = document.getElementById("rangeRemaining");
-    if (r) { r.textContent = remaining; r.style.color = remaining < 0 ? "#BF7C7C" : "#111"; }
-
-    document.getElementById("okSlider").value = ok;
-    document.getElementById("goodSlider").value = good;
-    document.getElementById("strongSlider").value = strong;
-
-    const saved = document.getElementById("rangesSaved");
-    if (saved) saved.style.display = "none";
-  }
-
-  function xToVal(bar, clientX) {
-    const rect = bar.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    return Math.round(pct * 15);
-  }
-
-  window.rangeBarDown = function(e) {
-    const bar = document.getElementById("rangeBar");
-    const h1 = document.getElementById("handle1");
-    const h2 = document.getElementById("handle2");
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const v = xToVal(bar, clientX);
-    const { ok, good, strong } = getBarValues();
-    const b1 = ok, b2 = ok + good;
-    dragging = Math.abs(v - b1) <= Math.abs(v - b2) ? "h1" : "h2";
-    e.preventDefault();
-  };
-
-  function onMove(e) {
-    if (!dragging) return;
-    const bar = document.getElementById("rangeBar");
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const v = Math.max(1, Math.min(14, xToVal(bar, clientX)));
-    const { ok, good, strong } = getBarValues();
-
-    if (dragging === "h1") {
-      const newOk = Math.max(1, Math.min(v, ok + good - 1));
-      const newGood = ok + good - newOk;
-      renderBar(newOk, newGood, strong);
-    } else {
-      const b1 = ok;
-      const newB2 = Math.max(b1 + 1, Math.min(v, ok + good + strong - 1));
-      const newGood = newB2 - b1;
-      const newStrong = ok + good + strong - newB2;
-      renderBar(ok, newGood, newStrong);
-    }
-    e.preventDefault();
-  }
-
-  function onUp() { dragging = null; }
-
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("mouseup", onUp);
-  document.addEventListener("touchmove", onMove, { passive: false });
-  document.addEventListener("touchend", onUp);
-
-  // Init bar after DOM ready
-  window.initRangeBar = function() {
-    const { ok, good, strong } = getBarValues();
-    renderBar(ok, good, strong);
-  };
-})();
-
-function updateRangeSliders() {
-  const ok = parseInt(document.getElementById("okSlider").value) || 5;
-  const good = parseInt(document.getElementById("goodSlider").value) || 5;
-  const strong = parseInt(document.getElementById("strongSlider").value) || 5;
-  // Re-render bar if it exists, otherwise just update counts
-  if (document.getElementById("rangeBar")) {
-    const total = 15;
-    const p1 = (ok / total) * 100;
-    const p2 = ((ok + good) / total) * 100;
-    const p3 = ((ok + good + strong) / total) * 100;
-    const segOk = document.getElementById("seg-ok");
-    if (segOk) {
-      segOk.style.width = p1 + "%";
-      document.getElementById("seg-good").style.left = p1 + "%";
-      document.getElementById("seg-good").style.width = (p2 - p1) + "%";
-      document.getElementById("seg-strong").style.left = p2 + "%";
-      document.getElementById("seg-strong").style.width = (p3 - p2) + "%";
-      document.getElementById("handle1").style.left = p1 + "%";
-      document.getElementById("handle2").style.left = p2 + "%";
-    }
-  }
   document.getElementById("okVal").textContent     = `1–${ok}`;
   document.getElementById("goodVal").textContent   = `${ok+1}–${ok+good}`;
   document.getElementById("strongVal").textContent = `${ok+good+1}–${ok+good+strong}`;
-  const remaining = 15 - (ok + good + strong);
+
   const r = document.getElementById("rangeRemaining");
-  if (r) { r.textContent = remaining; r.style.color = remaining < 0 ? "#BF7C7C" : "#111"; }
+  if (r) { r.textContent = remaining; r.style.color = remaining < 0 ? "#D95B5B" : remaining === 0 ? "#7ABF3A" : "#111"; }
+
+  // Sync hidden inputs
+  document.getElementById("okSlider").value     = ok;
+  document.getElementById("goodSlider").value   = good;
+  document.getElementById("strongSlider").value = strong;
+
+  // Update visual proportion bar
+  const barOk     = document.getElementById("bar-ok");
+  const barGood   = document.getElementById("bar-good");
+  const barStrong = document.getElementById("bar-strong");
+  if (barOk) {
+    const t = Math.max(total, 1);
+    barOk.style.width     = (ok     / 15 * 100) + "%";
+    barGood.style.width   = (good   / 15 * 100) + "%";
+    barStrong.style.width = (strong / 15 * 100) + "%";
+  }
+
   const saved = document.getElementById("rangesSaved");
   if (saved) saved.style.display = "none";
 }
+
+window.initRangeBar = function() {
+  // Load saved values into range inputs then render
+  try {
+    const r = JSON.parse(localStorage.getItem("bl_ranges") || "{}");
+    if (r.ok)     { document.getElementById("okRange").value     = r.ok; }
+    if (r.good)   { document.getElementById("goodRange").value   = r.good; }
+    if (r.strong) { document.getElementById("strongRange").value = r.strong; }
+  } catch {}
+  updateRangeTiles();
+};
+
+function updateRangeSliders() { updateRangeTiles(); }
+
 function saveRanges() {
-  const ok = parseInt(document.getElementById("okSlider").value);
-  const good = parseInt(document.getElementById("goodSlider").value);
-  const strong = parseInt(document.getElementById("strongSlider").value);
+  const ok     = parseInt(document.getElementById("okSlider").value)     || 5;
+  const good   = parseInt(document.getElementById("goodSlider").value)   || 5;
+  const strong = parseInt(document.getElementById("strongSlider").value) || 5;
   if (ok + good + strong > 15) { alert("Total exceeds 15. Please adjust."); return; }
   localStorage.setItem("bl_ranges", JSON.stringify({ ok, good, strong }));
   document.getElementById("rangesSaved").style.display = "block";
@@ -1105,11 +1036,10 @@ function saveRanges() {
 function loadRanges() {
   try {
     const r = JSON.parse(localStorage.getItem("bl_ranges") || "{}");
-    if (r.ok) document.getElementById("okSlider").value = r.ok;
-    if (r.good) document.getElementById("goodSlider").value = r.good;
-    if (r.strong) document.getElementById("strongSlider").value = r.strong;
-    if (window.initRangeBar) window.initRangeBar();
-    else updateRangeSliders();
+    if (r.ok)     document.getElementById("okRange").value     = r.ok;
+    if (r.good)   document.getElementById("goodRange").value   = r.good;
+    if (r.strong) document.getElementById("strongRange").value = r.strong;
+    updateRangeTiles();
   } catch {}
 }
 // ── Barcode scanner ───────────────────────────────────────────────
@@ -1517,14 +1447,14 @@ function renderSuppQuickLog() {
                 onblur="saveSuppField(${s.id},'desc',this.value)"
                 style="${inputStyle}width:100%;box-sizing:border-box;" />
             </div>
-            <div style="display:flex;flex-direction:column;gap:2px;">
+            <div style="display:flex;flex-direction:column;gap:2px;display:none;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#777;letter-spacing:1px;text-transform:uppercase;">Label Dose</span>
               <input id="suppDoseLog_${s.id}" type="text" maxlength="8" value="${s.dose || ""}"
                 placeholder="1000mg"
                 onblur="saveSuppField(${s.id},'dose',this.value);updateSuppTotal(${s.id})"
                 style="${inputStyle}width:64px;" />
             </div>
-            <div style="display:flex;flex-direction:column;gap:2px;">
+            <div style="display:none;">
               <span style="font-family:'DM Mono',monospace;font-size:9px;color:#3A9A9A;letter-spacing:1px;text-transform:uppercase;">Your Dose</span>
               <div id="suppTotal_${s.id}" style="padding:6px 8px;border:1px solid rgba(58,154,154,0.3);border-radius:4px;background:rgba(58,154,154,0.06);font-size:12px;font-family:'DM Mono',monospace;color:#3A9A9A;min-width:52px;text-align:center;">
                 ${calcSuppTotal(s.qty, s.servSize || "1", s.dose)}

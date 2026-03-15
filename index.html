@@ -850,6 +850,19 @@
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;margin-bottom:12px;">Pattern Reasoning</div>
     <div id="analysisBody"></div>
   </div>
+
+  <!-- Multi-Event Pattern Summary -->
+  <div style="margin-top:20px;border-top:1px solid rgba(0,0,0,0.08);padding-top:20px;">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#777;text-transform:uppercase;margin-bottom:6px;">Multi-Event Pattern Summary</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:#999;margin-bottom:12px;line-height:1.6;">Runs all events in the selected range through the same 5 principles and surfaces which behaviors consistently supported or limited your performance.</div>
+    <button class="analyze-btn disabled mono" id="summaryBtn" onclick="runPatternSummary()" style="background:rgba(58,154,154,0.08);border-color:rgba(58,154,154,0.3);color:#3A9A9A;">Run Pattern Summary</button>
+    <div id="summaryMsg" style="display:none" class="analyzing-msg">Building pattern summary across all events...</div>
+    <div id="summaryError" style="display:none" class="error-banner"></div>
+    <div id="summaryCard" style="display:none;margin-top:16px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;margin-bottom:12px;">Behavioral Pattern Summary</div>
+      <div id="summaryBody"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1617,8 +1630,10 @@ function selectCat(key) {
   // Update textarea placeholder per category
   const catPlaceholders = {
     sleep:     "Include last meal time before bed, time in bed and hours slept...",
+    food:      "Include what you ate, timing of meals, any late eating, and how your gut felt...",
     stress:    "Rate stress and/or mental state with contributing factors...",
     substance: "Do recovery assessment 24-48 hrs after strenuous event. Add any notes about your recovery (optional)...",
+    exercise:  "Describe the workout, intensity, duration, and how your body felt during and after...",
   };
   document.getElementById("transcriptText").placeholder = catPlaceholders[key] || "Your spoken entry will appear here... or type directly";
   // Supplement tile: show read-only today summary, hide entry form
@@ -1769,8 +1784,11 @@ function setRecordingState(active) {
     label.textContent = "Hold to Speak";
     label.style.color = "";
     const placeholders = {
-      sleep: "Include last meal time before bed, time in bed and hours slept...",
-      substance: "Rate Your Recovery — see scoring below",
+      sleep:     "Include last meal time before bed, time in bed and hours slept...",
+      food:      "Include what you ate, timing of meals, any late eating, and how your gut felt...",
+      stress:    "Rate stress and/or mental state with contributing factors...",
+      substance: "Do recovery assessment 24-48 hrs after strenuous event. Add any notes about your recovery (optional)...",
+      exercise:  "Describe the workout, intensity, duration, and how your body felt during and after...",
     };
     document.getElementById("transcriptText").placeholder = placeholders[key] || "Your spoken entry will appear here... or type directly";
   }
@@ -2121,6 +2139,7 @@ function renderEventPicker() {
 
 function updateAnalyzeBtn() {
   const btn = document.getElementById("analyzeBtn");
+  const sBtn = document.getElementById("summaryBtn");
   if (!btn) return;
   if (selectedRange && selectedEventId) {
     const m = RANGE_META[selectedRange];
@@ -2132,6 +2151,13 @@ function updateAnalyzeBtn() {
   } else {
     btn.classList.remove("ready"); btn.classList.add("disabled");
     btn.textContent = "Select a Range First";
+  }
+  if (sBtn) {
+    if (selectedRange) {
+      sBtn.classList.add("ready"); sBtn.classList.remove("disabled");
+    } else {
+      sBtn.classList.remove("ready"); sBtn.classList.add("disabled");
+    }
   }
 }
 
@@ -2223,34 +2249,42 @@ async function runAnalysis() {
     const dayLabel = new Date(dayStart).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
     if (dayEntries.length) {
       dayBlock += `d${d} (${dayLabel}):\n`;
-      dayBlock += dayEntries.map(e => `  [${e.category}] ${(e.note||"").slice(0,80)}`).join("\n") + "\n\n";
+      dayBlock += dayEntries.map(e => {
+        let line = `  [${e.category}] ${(e.note||"").slice(0,80)}`;
+        if (e.recoveryScores) line += ` | recovery scores: ${Object.entries(e.recoveryScores).map(([k,v])=>`${k}=${v}`).join(", ")}`;
+        if (e.scores) line += ` | event scores: ${Object.entries(e.scores).map(([k,v])=>`${k}=${v}`).join(", ")}`;
+        return line;
+      }).join("\n") + "\n\n";
     } else {
       dayBlock += `d${d} (${dayLabel}): no entries logged\n\n`;
     }
   }
 
-  // ── Build element list string for prompt ─────────────────────────────────
-  const elementList = cachedElements.map(el => `- "${el.name}" (${el.category})`).join("\n");
+  const prompt = `You are a human performance analyst. A person scored ${totalScore}/15 on a focal performance event. Analyze the behavioral data logged in the ${daysBack} days before that event.${aof ? ` Their area of focus is: "${aof}".` : ""}
 
-  const prompt = `You are a human performance analyst. A person scored ${totalScore}/15 on a focal event. Analyze the behavioral data logged in the ${daysBack} days before that event and rate each element below as STRONG, MODERATE, or NEEDS WORK.
+Your job is to rate the following five core performance principles based strictly on what was actually logged. These are the only elements to assess.
 
-ELEMENTS TO RATE (only rate if evidence exists in the data):
-${elementList}
+CORE PRINCIPLES TO RATE:
+- "Sleep Quality & Bedtime" (category: sleep) — Users are prompted to log: last meal time before bed, time they got into bed, and hours slept. Look for: early consistent bedtime (before 10pm ideal), 7-9hrs sleep, last meal at least 2-3hrs before bed. Late bedtime, short sleep, or eating close to bed = NEEDS WORK.
+- "Late Eating Habits" (category: food) — Users are prompted to log: what they ate, timing of meals, any late eating, and gut reactions. Look for: any mention of eating late at night or close to bedtime. If last meal before bed was mentioned in sleep entries, cross-reference it here. Late eating or heavy meals near bedtime = NEEDS WORK.
+- "Nutrition Quality" (category: food) — Users are prompted to log: meals eaten, timing, and gut feelings. Look for: whole foods, protein-rich meals, vegetables, absence of processed/junk food, good gut reactions. Poor food quality, lots of processed food, or gut issues = NEEDS WORK.
+- "Stress & Mental Load" (category: stress) — Users are prompted to rate their stress level and note contributing factors. Look for: explicit stress ratings, mentions of high workload, anxiety, poor mood, or mental fatigue. High stress or negative mental state = NEEDS WORK.
+- "Recovery Practice" (category: substance) — Users are prompted to do recovery assessments 24-48hrs after strenuous events, logging notes plus scored ratings (1-5) for Muscle Soreness, Mentally Ready to Go, and Physically Ready to Go. Look for: presence of recovery scores, high scores across all three dimensions, and positive recovery notes. Missing assessment or low scores = NEEDS WORK.
 
 RATING RULES:
-- STRONG = clearly positive contribution to performance
-- MODERATE = neutral or mixed signal
-- NEEDS WORK = clearly negative or missing contribution
-- Skip elements with no evidence in the data
-- Include a short note (max 25 chars) from the actual log entries supporting the rating
-${aof ? `- Area of focus: "${aof}"` : ""}
+- STRONG = clearly positive contribution based on logged evidence
+- MODERATE = neutral, mixed, or partially supported by logged data
+- NEEDS WORK = clearly negative, absent, or unsupportive evidence
+- SKIP any principle if there are no relevant log entries — do not guess or assume
+- Include a short note (max 28 chars) summarizing the actual logged evidence
+- Never invent data — only reference what appears in the logged entries below
 
-Return ONLY valid JSON:
-{"days":[{"day":"d1","elements":[{"name":"Gut Health","category":"food","rating":"MODERATE","note":"some fiber, low variety"},{"name":"Bedtime Consistency","category":"sleep","rating":"STRONG","note":"10pm both nights"}]}]}
+Return ONLY valid JSON, no other text:
+{"days":[{"day":"d1","elements":[{"name":"Sleep Quality & Bedtime","category":"sleep","rating":"STRONG","note":"9:30pm, 8hrs logged"},{"name":"Late Eating Habits","category":"food","rating":"MODERATE","note":"ate 8pm, 1hr before bed"}]}]}
 
-Days d${daysBack} (farthest) to d1 (closest to event).
+Days d${daysBack} (farthest from event) to d1 (closest to event).
 
-DATA:
+LOGGED DATA:
 ${dayBlock}`;
 
   // ── Gemini call ──────────────────────────────────────────────────────────
@@ -2417,6 +2451,161 @@ ${dayBlock}`;
   document.getElementById("analyzeBtn").textContent = "Analyze This Event";
   document.getElementById("analyzeBtn").disabled = false;
   updateUI();
+}
+
+// ── Multi-Event Pattern Summary ───────────────────────────────────
+async function runPatternSummary() {
+  if (!selectedRange) return;
+  const bounds = getRangeBounds();
+  const b = bounds[selectedRange];
+  const m = RANGE_META[selectedRange];
+  const aof = getAreaOfFocus();
+  const daysBack = parseInt(document.getElementById("lookbackSlider")?.value || "3");
+
+  // Get all scored events in selected range
+  const rangeEvents = entries
+    .filter(e => (e.category === "exercise" || e.category === "substance") && e.scores || e.recoveryScores)
+    .filter(e => { const t = getTotalScore(e); return t !== null && t > b.min && t <= b.max; })
+    .sort((a, bx) => bx.ts - a.ts)
+    .slice(0, 6);
+
+  if (!rangeEvents.length) {
+    document.getElementById("summaryBody").innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#aaa;padding:12px;">No scored events found in the ${m.label} range yet. Log and score some focal events first.</div>`;
+    document.getElementById("summaryCard").style.display = "block";
+    return;
+  }
+
+  document.getElementById("summaryBtn").textContent = "Analyzing...";
+  document.getElementById("summaryBtn").disabled = true;
+  document.getElementById("summaryMsg").style.display = "block";
+  document.getElementById("summaryCard").style.display = "none";
+  document.getElementById("summaryError").style.display = "none";
+
+  // Build data block for all events
+  let allEventsBlock = "";
+  rangeEvents.forEach((focal, idx) => {
+    const evDate = new Date(focal.ts).toLocaleDateString([], { weekday:"short", month:"short", day:"numeric" });
+    const score = getTotalScore(focal);
+    allEventsBlock += `\nEVENT ${idx+1}: "${(focal.note||"Focal Event").slice(0,50)}" — ${score}/15 on ${evDate}\n`;
+    for (let d = daysBack; d >= 1; d--) {
+      const dayStart = focal.ts - d * 86400000;
+      const dayEnd   = focal.ts - (d-1) * 86400000;
+      const dayEntries = entries.filter(e => e.ts >= dayStart && e.ts < dayEnd);
+      if (dayEntries.length) {
+        allEventsBlock += `  d${d}: ` + dayEntries.map(e => {
+          let line = `[${e.category}] ${(e.note||"").slice(0,60)}`;
+          if (e.recoveryScores) line += ` | recovery: ${Object.entries(e.recoveryScores).map(([k,v])=>`${k}=${v}`).join(", ")}`;
+          return line;
+        }).join(" / ") + "\n";
+      } else {
+        allEventsBlock += `  d${d}: no entries\n`;
+      }
+    }
+  });
+
+  const prompt = `You are a human performance analyst. Below are ${rangeEvents.length} "${m.label}" range performance events (scored ${b.min+1}–${b.max}/15) with behavioral data from the ${daysBack} days before each.${aof ? ` Area of focus: "${aof}".` : ""}
+
+Analyze ALL events together and for each of the 5 core principles, identify the PATTERN across events — was this principle consistently supporting performance, consistently limiting it, or mixed?
+
+THE 5 PRINCIPLES:
+1. "Sleep Quality & Bedtime" (sleep) — bedtime consistency, hours slept, last meal before bed
+2. "Late Eating Habits" (food) — avoiding food close to bedtime, meal timing
+3. "Nutrition Quality" (food) — whole foods, protein, avoiding processed food
+4. "Stress & Mental Load" (stress) — low stress, positive mental state
+5. "Recovery Practice" (substance) — recovery assessments, soreness/readiness scores
+
+For each principle return:
+- pattern: "CONSISTENTLY STRONG" | "MOSTLY STRONG" | "MIXED" | "MOSTLY NEEDS WORK" | "CONSISTENTLY NEEDS WORK" | "INSUFFICIENT DATA"
+- confidence: "HIGH" | "MEDIUM" | "LOW" (based on how much data was logged)
+- insight: one specific sentence (max 60 chars) describing the actual pattern seen across events
+- events_rated: how many of the ${rangeEvents.length} events had relevant data for this principle
+
+Return ONLY valid JSON:
+{"summary":{"range":"${m.label}","events_analyzed":${rangeEvents.length},"principles":[{"name":"Sleep Quality & Bedtime","category":"sleep","pattern":"CONSISTENTLY STRONG","confidence":"HIGH","insight":"Bed before 10pm in 4 of 5 events","events_rated":5},{"name":"Late Eating Habits","category":"food","pattern":"MIXED","confidence":"MEDIUM","insight":"Late eating noted in 2 of 4 events","events_rated":4}]},"overall_insight":"One sentence summarizing the single biggest behavioral pattern separating strong from weak events."}
+
+ALL EVENT DATA:
+${allEventsBlock}`;
+
+  try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 30000);
+    let resp;
+    try {
+      resp = await fetch(WORKER + "?service=gemini", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{ maxOutputTokens: 2000 } }),
+        signal: controller.signal
+      });
+    } finally { clearTimeout(tid); }
+    const gdata = await resp.json();
+    const raw = gdata?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    let clean = raw.replace(/```json|```/g, "").trim();
+    let parsed = {};
+    try { parsed = JSON.parse(clean); } catch(e) {
+      const obj = clean.match(/\{[\s\S]*\}/);
+      if (obj) { try { parsed = JSON.parse(obj[0]); } catch(e2) {} }
+    }
+
+    const summary = parsed.summary;
+    if (!summary || !summary.principles) throw new Error("No summary data returned");
+
+    const PATTERN_COLORS = {
+      "CONSISTENTLY STRONG":    { bg: "rgba(122,191,58,0.15)",  border: "#7ABF3A", text: "#4A8A1A", icon: "▲▲" },
+      "MOSTLY STRONG":          { bg: "rgba(122,191,58,0.08)",  border: "#7ABF3A", text: "#4A8A1A", icon: "▲"  },
+      "MIXED":                  { bg: "rgba(232,168,56,0.12)",  border: "#E8A838", text: "#9A6A10", icon: "◆"  },
+      "MOSTLY NEEDS WORK":      { bg: "rgba(217,91,91,0.08)",   border: "#D95B5B", text: "#A32020", icon: "▼"  },
+      "CONSISTENTLY NEEDS WORK":{ bg: "rgba(217,91,91,0.15)",   border: "#D95B5B", text: "#A32020", icon: "▼▼" },
+      "INSUFFICIENT DATA":      { bg: "rgba(0,0,0,0.03)",       border: "rgba(0,0,0,0.12)", text: "#999", icon: "–" },
+    };
+    const CONF_COLORS = { HIGH: "#7ABF3A", MEDIUM: "#E8A838", LOW: "#999" };
+
+    // Header
+    let html = `<div style="background:rgba(58,154,154,0.08);border:1px solid rgba(58,154,154,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#3A9A9A;">${summary.events_analyzed} ${m.label} events analyzed · ${daysBack} days each</div>
+      ${parsed.overall_insight ? `<div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:6px;line-height:1.5;font-style:italic;">"${parsed.overall_insight}"</div>` : ""}
+    </div>`;
+
+    // Principle rows
+    html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
+    (summary.principles || []).forEach(p => {
+      const c = PATTERN_COLORS[p.pattern] || PATTERN_COLORS["INSUFFICIENT DATA"];
+      const confColor = CONF_COLORS[p.confidence] || "#999";
+      const catColor_ = catColor(p.category);
+      html += `<div style="background:${c.bg};border:1.5px solid ${c.border};border-radius:8px;padding:12px 14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:${catColor_};display:flex;align-items:center;justify-content:center;font-size:10px;color:white;flex-shrink:0;">${CATEGORIES[p.category]?.icon||"·"}</div>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#111;">${p.name}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:#999;">${p.events_rated||"?"} events</span>
+            <span style="font-family:'DM Mono',monospace;font-size:8px;color:${confColor};border:1px solid ${confColor};border-radius:3px;padding:1px 5px;">${p.confidence||""}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:${c.text};font-weight:700;letter-spacing:0.5px;">${c.icon} ${p.pattern}</span>
+        </div>
+        ${p.insight ? `<div style="font-family:'DM Mono',monospace;font-size:9px;color:#666;margin-top:6px;font-style:italic;">"${p.insight}"</div>` : ""}
+      </div>`;
+    });
+    html += `</div>`;
+
+    // Pattern legend
+    html += `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.07);">
+      <span style="font-family:'DM Mono',monospace;font-size:8px;color:#aaa;">▲▲ consistently strong &nbsp;▲ mostly strong &nbsp;◆ mixed &nbsp;▼ mostly needs work &nbsp;▼▼ consistently needs work</span>
+    </div>`;
+
+    document.getElementById("summaryBody").innerHTML = html;
+    document.getElementById("summaryCard").style.display = "block";
+
+  } catch(err) {
+    const errEl = document.getElementById("summaryError");
+    errEl.textContent = err.name === "AbortError" ? "Timed out — try fewer days" : "Summary failed: " + err.message;
+    errEl.style.display = "block";
+  }
+  document.getElementById("summaryMsg").style.display = "none";
+  document.getElementById("summaryBtn").textContent = "Run Pattern Summary";
+  document.getElementById("summaryBtn").disabled = false;
 }
 
 async function generateCommonality(focalEvents, daysBack, selectedCats, eventRows) {

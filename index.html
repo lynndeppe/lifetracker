@@ -440,7 +440,7 @@
 
     <!-- Area of Focus card -->
     <div style="background:rgba(58,154,154,0.06);border:1px solid rgba(58,154,154,0.25);border-radius:8px;padding:16px;margin-bottom:16px;">
-      <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#3A9A9A;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Area of Focus</div>
+      <div style="font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#111;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Area of Focus</div>
       <div style="font-family:'DM Mono',monospace;font-size:10px;color:#888;margin-bottom:12px;">Examples: strength training, managing anxiety, improving sleep, gut health issue, weight loss...</div>
       <textarea id="areaOfFocus" rows="3"
         placeholder="Describe your primary health or performance goal..."
@@ -459,17 +459,17 @@
         <!-- Labels row -->
         <div style="display:flex;margin-bottom:8px;">
           <div style="display:flex;flex-direction:column;align-items:center;">
-            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;font-weight:600;">OK</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;font-weight:600;">Recovery</span>
             <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="okVal">1–5</span>
           </div>
           <div style="flex:1;"></div>
           <div style="display:flex;flex-direction:column;align-items:center;">
-            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#8BAF7C;text-transform:uppercase;font-weight:600;">Good</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#E8A838;text-transform:uppercase;font-weight:600;">Conditioning</span>
             <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="goodVal">6–10</span>
           </div>
           <div style="flex:1;"></div>
           <div style="display:flex;flex-direction:column;align-items:center;">
-            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#D95B5B;text-transform:uppercase;font-weight:600;">Strong</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#D95B5B;text-transform:uppercase;font-weight:600;">Overload</span>
             <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="strongVal">11–15</span>
           </div>
         </div>
@@ -484,7 +484,7 @@
           <div id="seg-strong" style="position:absolute;top:0;height:100%;background:#D95B5B;"></div>
 
           <!-- Handle 1: OK | Good boundary -->
-          <div id="handle1" style="position:absolute;top:50%;width:20px;height:20px;background:white;border-radius:50%;border:2px solid #888;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,0.25);cursor:ew-resize;z-index:2;"></div>
+          <div id="handle1" style="position:absolute;top:50%;width:20px;height:20px;background:white;border-radius:50%;border:2px solid #E8A838;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,0.25);cursor:ew-resize;z-index:2;"></div>
           <!-- Handle 2: Good | Strong boundary -->
           <div id="handle2" style="position:absolute;top:50%;width:20px;height:20px;background:white;border-radius:50%;border:2px solid #D95B5B;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,0.25);cursor:ew-resize;z-index:2;"></div>
         </div>
@@ -628,8 +628,8 @@
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#3A9A9A;font-weight:700;margin-bottom:4px;">Step 1 — Area of Focus</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Foundation → Set-Up. Type your Area of Focus (Examples: strength training, managing anxiety, improving sleep, gut health issue, weight loss). This is injected into every AI analysis for personalized recommendations.</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#3A9A9A;font-weight:700;margin-bottom:4px;">Step 2 — Experience Range</div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:4px;">Allows the user to define 3 areas of measurement based on how you perceive an experience. Set the score thresholds for OK / Good / Strong in Set-Up. A common starting split is 7 / 7 / 6 (out of 20 total). Adjust over time as you calibrate.</div>
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:10px;">OK = baseline · Good = above average · Strong = peak performance</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:4px;">Allows the user to define 3 areas of measurement based on how you perceive an experience. Set the score thresholds for Recovery / Conditioning / Overload in Set-Up. A common starting split is 5 / 5 / 5 (out of 15 total). Adjust over time as you calibrate.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:10px;">Recovery = baseline · Conditioning = above average · Overload = peak performance</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#3A9A9A;font-weight:700;margin-bottom:4px;">Step 3 — Add Supplements</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Foundation → Supplements. Add each supplement with name, purpose, serving size, quantity by taking a picture of the product label with your mobile device camera or pull an image from your stored picture gallery.</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#3A9A9A;font-weight:700;margin-bottom:4px;">Step 4 — Connect Strava (optional)</div>
@@ -674,7 +674,7 @@
       <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#111;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #3A9A9A;">5 · Pattern Discovery</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Cross-references a specific performance event against behavioral data leading up to it. The number of days to be included is based on the "Pattern Discovery Window" defined in setup.</div>
       <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:2.2;">
-        <div>1. Select experience tier (OK / Good / Strong)</div>
+        <div>1. Select experience tier (Recovery / Conditioning / Overload)</div>
         <div>2. Pick one of the 4 most recent matching Focal Events</div>
         <div>3. Tap Analyze This Event</div>
         <div>4. Read the day3 → day2 → day1 grid — rows = report card elements, columns = days before</div>
@@ -699,7 +699,7 @@
       <div style="font-family:'DM Mono',monospace;font-size:10px;color:#444;line-height:2.2;">
         <div>· The AI engines need data so be consistent. Log every day, even briefly — one note per category beats nothing.</div>
         <div>· Be specific in notes — the AI reads them verbatim</div>
-        <div>· Calibrate ranges — if everything scores Strong, widen the buckets</div>
+        <div>· Calibrate ranges — if everything scores Overload, widen the buckets</div>
         <div>· Back up weekly — the backup file is your only safety net</div>
         <div>· Check Pattern Discovery after your 5th–10th scored Focal Event</div>
         <div>· Update Area of Focus when and if your goals change</div>
@@ -811,9 +811,9 @@
       </div>
       <div id="info7" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(124,191,191,0.08);border-radius:6px;line-height:1.6;">Select an experience level and analyze the 5 most recent focal events in that range — rated across key performance dimensions.</div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <button onclick="setFocalReportRange('ok')" id="frBtn-ok" style="flex:1;padding:7px;border:1px solid #999;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:white;color:#999;text-transform:uppercase;">OK</button>
-        <button onclick="setFocalReportRange('good')" id="frBtn-good" style="flex:1;padding:7px;border:1px solid #7ABF3A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:white;color:#7ABF3A;text-transform:uppercase;">Good</button>
-        <button onclick="setFocalReportRange('strong')" id="frBtn-strong" style="flex:1;padding:7px;border:1px solid #3A9A9A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:white;color:#3A9A9A;text-transform:uppercase;">Strong</button>
+        <button onclick="setFocalReportRange('ok')" id="frBtn-ok" style="flex:1;padding:7px;border:1px solid #999;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:white;color:#999;text-transform:uppercase;">Recovery</button>
+        <button onclick="setFocalReportRange('good')" id="frBtn-good" style="flex:1;padding:7px;border:1px solid #7ABF3A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:white;color:#7ABF3A;text-transform:uppercase;">Conditioning</button>
+        <button onclick="setFocalReportRange('strong')" id="frBtn-strong" style="flex:1;padding:7px;border:1px solid #3A9A9A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;background:white;color:#3A9A9A;text-transform:uppercase;">Overload</button>
       </div>
       <button onclick="generateFocalReport()" style="width:100%;padding:9px;background:#7CBFBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="focalReportBtn">Select Range Above</button>
       <div id="focalReportOutput" style="display:none;margin-top:14px;">
@@ -2015,9 +2015,9 @@ function updateUI() {
 // Focal event picker
 // ── Range-based focal event picker ───────────────────────────────
 const RANGE_META = {
-  ok:     { label: "OK",     color: "#888",    bg: "rgba(136,136,136,0.1)", border: "#999" },
-  good:   { label: "Good",   color: "#8BAF7C", bg: "rgba(139,175,124,0.1)", border: "#8BAF7C" },
-  strong: { label: "Strong", color: "#D95B5B", bg: "rgba(217,91,91,0.1)", border: "#D95B5B" }
+  ok:     { label: "Recovery",     color: "#888",    bg: "rgba(136,136,136,0.1)", border: "#999" },
+  good:   { label: "Conditioning",   color: "#E8A838", bg: "rgba(232,168,56,0.1)",  border: "#E8A838" },
+  strong: { label: "Overload", color: "#D95B5B", bg: "rgba(217,91,91,0.1)", border: "#D95B5B" }
 };
 let selectedRange = null; // "ok" | "good" | "strong"
 let selectedEventId = null; // ts of selected focal event
@@ -3562,7 +3562,7 @@ function setFocalReportRange(key) {
     b.style.background = k === key ? colors[k] : "white";
     b.style.color = k === key ? "white" : colors[k];
   });
-  const labels = {ok:"OK", good:"Good", strong:"Strong"};
+  const labels = {ok:"Recovery", good:"Conditioning", strong:"Overload"};
   const btn = document.getElementById("focalReportBtn");
   btn.textContent = `Analyze ${labels[key]} Events`;
 }
@@ -3590,7 +3590,7 @@ async function generateFocalReport(silent=false) {
     .filter(e => { const t = getTotalScore(e); return t !== null && t >= b.min+1 && t <= b.max; })
     .sort((a, b2) => b2.ts - a.ts).slice(0, 5);
 
-  const labels = {ok:"OK", good:"Good", strong:"Strong"};
+  const labels = {ok:"Recovery", good:"Conditioning", strong:"Overload"};
   const rangeLabel = labels[focalReportRange];
 
   if (!focalEvents.length) {

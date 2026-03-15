@@ -469,7 +469,7 @@
           </div>
           <div style="flex:1;"></div>
           <div style="display:flex;flex-direction:column;align-items:center;">
-            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#7CBFBF;text-transform:uppercase;font-weight:600;">Strong</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#D95B5B;text-transform:uppercase;font-weight:600;">Strong</span>
             <span style="font-family:'DM Mono',monospace;font-size:12px;color:#111;font-weight:700;" id="strongVal">11–15</span>
           </div>
         </div>
@@ -481,12 +481,12 @@
           <!-- Coloured fill segments -->
           <div id="seg-ok"     style="position:absolute;top:0;left:0;height:100%;background:#999;"></div>
           <div id="seg-good"   style="position:absolute;top:0;height:100%;background:#8BAF7C;"></div>
-          <div id="seg-strong" style="position:absolute;top:0;height:100%;background:#7CBFBF;"></div>
+          <div id="seg-strong" style="position:absolute;top:0;height:100%;background:#D95B5B;"></div>
 
           <!-- Handle 1: OK | Good boundary -->
           <div id="handle1" style="position:absolute;top:50%;width:20px;height:20px;background:white;border-radius:50%;border:2px solid #888;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,0.25);cursor:ew-resize;z-index:2;"></div>
           <!-- Handle 2: Good | Strong boundary -->
-          <div id="handle2" style="position:absolute;top:50%;width:20px;height:20px;background:white;border-radius:50%;border:2px solid #7CBFBF;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,0.25);cursor:ew-resize;z-index:2;"></div>
+          <div id="handle2" style="position:absolute;top:50%;width:20px;height:20px;background:white;border-radius:50%;border:2px solid #D95B5B;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,0.25);cursor:ew-resize;z-index:2;"></div>
         </div>
 
         <!-- Scale labels -->
@@ -2017,7 +2017,7 @@ function updateUI() {
 const RANGE_META = {
   ok:     { label: "OK",     color: "#888",    bg: "rgba(136,136,136,0.1)", border: "#999" },
   good:   { label: "Good",   color: "#8BAF7C", bg: "rgba(139,175,124,0.1)", border: "#8BAF7C" },
-  strong: { label: "Strong", color: "#7CBFBF", bg: "rgba(124,191,191,0.1)", border: "#7CBFBF" }
+  strong: { label: "Strong", color: "#D95B5B", bg: "rgba(217,91,91,0.1)", border: "#D95B5B" }
 };
 let selectedRange = null; // "ok" | "good" | "strong"
 let selectedEventId = null; // ts of selected focal event

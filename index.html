@@ -740,7 +740,7 @@
       <div id="info2" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(58,154,154,0.06);border-radius:6px;line-height:1.6;">Groups all ingredients across your supplements, combines duplicates, provides science-based recommended adult doses with status indicators, and optimal timing for each supplement.</div>
       <button onclick="generateIngredientReport()" style="width:100%;padding:9px;background:#3A9A9A;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="ingReportBtn">Perform Analysis</button>
       <div id="ingReportOutput" style="display:none;margin-top:14px;">
-        <div id="ingReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;white-space:pre-wrap;"></div>
+        <div id="ingReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#333;line-height:1.8;"></div>
         <button onclick="downloadIngredientReport()" style="width:100%;margin-top:10px;padding:9px;background:none;border:1px solid #3A9A9A;color:#3A9A9A;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">&#8595; Download Report</button>
       </div>
     </div>
@@ -1140,8 +1140,7 @@ async function scanLabelWithAI(file) {
         contents: [{
           parts: [
             { inline_data: { mime_type: "image/jpeg", data: base64 } },
-            { text: `Look at this supplement label image. Extract the product name and all ingredients with their amounts. Return ONLY valid JSON, no other text, in this exact format:
-{"name":"Product Name","ingredients":[{"ingredient":"Vitamin C","amount":"40mg"},{"ingredient":"Zinc","amount":"1.5mg"}]}` }
+            { text: `Look at this supplement label image. Extract the product name, the serving size (number of tablets/capsules per serving as a number only), and all ingredients with their amounts PER FULL LABEL SERVING. Important: ingredient amounts on supplement labels are always shown for the full serving size — use those exact amounts as listed on the label. Return ONLY valid JSON, no other text, in this exact format:\n{\"name\":\"Product Name\",\"servSize\":\"4\",\"ingredients\":[{\"ingredient\":\"Vitamin C\",\"amount\":\"60mg\"},{\"ingredient\":\"Zinc\",\"amount\":\"11mg\"}]}` }
           ]
         }]
       })
@@ -1206,7 +1205,8 @@ function confirmLabelScan() {
   const dailyPeriods = includeDaily ? [{ from: Date.now(), to: null }] : [];
   const name = labelScanData.name || "Supplement";
   const ingredients = labelScanData.ingredients || [];
-  supplements.push({ id: Date.now(), name, dose: "", servSize: "1", qty, desc: "", ingredients, includeDaily, dailyPeriods });
+  const scannedServSize = labelScanData.servSize ? String(labelScanData.servSize) : "1";
+  supplements.push({ id: Date.now(), name, dose: "", servSize: scannedServSize, qty, desc: "", ingredients, includeDaily, dailyPeriods });
   saveSupplements();
   document.getElementById("labelScanResult").style.display = "none";
   labelScanData = null;

@@ -582,6 +582,13 @@
         <div id="restoreStatus" style="display:none;text-align:center;margin-top:8px;font-family:'DM Mono',monospace;font-size:11px;"></div>
       </div>
 
+      <!-- Clear All Data -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,0.08);">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#D95B5B;text-transform:uppercase;font-weight:600;margin-bottom:6px;">Danger Zone</div>
+        <button onclick="clearAllData()" style="width:100%;padding:11px;background:rgba(217,91,91,0.08);border:1px solid rgba(217,91,91,0.4);border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;color:#D95B5B;">&#10005; Clear All Data</button>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#aaa;margin-top:6px;text-align:center;line-height:1.5;">Permanently deletes all entries, supplements, reports &amp; settings. Back up first.</div>
+      </div>
+
       </div>
     </div>
 
@@ -2587,6 +2594,27 @@ function renderStorageBar() {
       <span style="color:#aaa;"> used of ~${fmt(QUOTA_BYTES)} available (${usedPct.toFixed(1)}%)</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:2px 0;">${groupRows}</div>`;
+}
+
+function clearAllData() {
+  if (!confirm("Are you sure you want to delete ALL data?\n\nThis will permanently remove all journal entries, supplements, report caches, settings, and Strava data.\n\nThis cannot be undone. Back up first if needed.")) return;
+  if (!confirm("Last chance — tap OK to permanently clear everything.")) return;
+  const keys = [
+    "bl_entries", "bl_ranges", "bl_supplements", "bl_last_backup",
+    "bl_last_auto_log", "bl_area_of_focus", "strava_token",
+    "strava_last_activities", "strava_imported_ids",
+    "bl_report_food", "bl_report_sleep", "bl_report_stress",
+    "bl_report_substance", "bl_report_exercise"
+  ];
+  keys.forEach(k => localStorage.removeItem(k));
+  // Reset in-memory state
+  entries = [];
+  supplements = [];
+  exerciseScores = {};
+  substanceScores = {};
+  loadEntries();
+  renderStorageBar();
+  showToast("All data cleared. Starting fresh.");
 }
 
 function backupData() {

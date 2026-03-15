@@ -67,7 +67,7 @@
   /* Foundation sub-tabs */
   .sub-tabs { display: flex; gap: 3px; margin-bottom: 16px; }
   .sub-tab { padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: transparent; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.5px; transition: all 0.2s; -webkit-tap-highlight-color: transparent; text-transform: uppercase; white-space: nowrap; flex: 1; text-align: center; }
-  .sub-tab.active { background: #3A9A9A; color: white; border-color: #3A9A9A; }
+  .sub-tab.active { background: #7ABF3A; color: white; border-color: #7ABF3A; }
 
   /* Main content */
   .content { max-width: 640px; margin: 20px auto; padding: 0 20px; }
@@ -532,7 +532,7 @@
         <div style="display:flex;flex-direction:column;gap:12px;">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
             <input type="checkbox" id="chk-sleep" checked style="width:18px;height:18px;accent-color:#7C9CBF;" />
-            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#7C9CBF;">Sleep &amp; Recovery</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#7C9CBF;">Sleep Quality</span>
           </label>
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
             <input type="checkbox" id="chk-food" checked style="width:18px;height:18px;accent-color:#8BAF7C;" />
@@ -644,7 +644,7 @@
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:#444;line-height:1.8;margin-bottom:10px;">Tap Log Entries at the top. Select a category, write or verbalize your note, and tap Log Entry. Try to be clear and specific as this will help the AI analysis to be more effective.</div>
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:#777;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Categories to log:</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-        <div style="background:rgba(124,156,191,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#7C9CBF;">◑ Sleep &amp; Recovery</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Bedtime, wake time, HRV etc.</div></div>
+        <div style="background:rgba(124,156,191,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#7C9CBF;">◑ Sleep Quality</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Bedtime, last meal, hours slept</div></div>
         <div style="background:rgba(139,175,124,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#8BAF7C;">◆ Food &amp; Nutrition</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Meals, timing, gut reactions etc.</div></div>
         <div style="background:rgba(191,156,124,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#BF9C7C;">◎ Stress &amp; Mental</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Mood, anxiety, mental load etc.</div></div>
         <div style="background:rgba(191,124,156,0.1);border-radius:6px;padding:8px 10px;"><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#BF7C9C;">◈ Recovery Model</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:#555;margin-top:2px;">Rate muscle soreness, mental & physical recovery</div></div>
@@ -662,7 +662,7 @@
         <div><span style="color:#3A9A9A;font-weight:700;">1.</span> Supplement Review List &nbsp;·&nbsp; instant list, no AI</div>
         <div><span style="color:#3A9A9A;font-weight:700;">2.</span> Supplement Analysis &nbsp;·&nbsp; ingredient stack + optimal timing</div>
         <div><span style="color:#3A9A9A;font-weight:700;">3.</span> Food &amp; Nutrition &nbsp;·&nbsp; food, snacks, gut, sugar, lipids, food pyramid</div>
-        <div><span style="color:#3A9A9A;font-weight:700;">4.</span> Sleep &amp; Recovery &nbsp;·&nbsp; timing, consistency</div>
+        <div><span style="color:#3A9A9A;font-weight:700;">4.</span> Sleep Quality &nbsp;·&nbsp; bedtime, last meal, hours slept</div>
         <div><span style="color:#3A9A9A;font-weight:700;">5.</span> Stress &amp; Mental &nbsp;·&nbsp; morning / afternoon / evening patterns</div>
         <div><span style="color:#3A9A9A;font-weight:700;">6.</span> Recovery Model &nbsp;·&nbsp; recovery patterns &amp; impact signals</div>
         <div><span style="color:#3A9A9A;font-weight:700;">7.</span> Focal Events &nbsp;·&nbsp; select a tier, analyze 5 most recent</div>
@@ -764,10 +764,10 @@
     <div style="background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.1);border-radius:8px;padding:16px;margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
         <div style="font-family:'DM Mono',monospace;font-size:22px;color:#7C9CBF;font-weight:700;line-height:1;">4.</div>
-        <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;flex:1;">Sleep & Recovery</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;flex:1;">Sleep Quality</div>
         <button onclick="toggleReportDetail('detail-sleep')" style="width:20px;height:20px;border-radius:50%;background:#7C9CBF;color:white;border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">i</button>
       </div>
-      <div id="info4" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(124,156,191,0.08);border-radius:6px;line-height:1.6;">Analyzes sleep logs for last food/drink before bed, bedtime, wake time, and HRV — rated Needs Work / Moderate / Good.</div>
+      <div id="info4" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(124,156,191,0.08);border-radius:6px;line-height:1.6;">Analyzes sleep entries for last meal before bed, bedtime consistency, sleep duration, and quality signals — all rated against performance sleep habits.</div>
       <button onclick="generateCategoryReport('sleep')" style="width:100%;padding:9px;background:#7C9CBF;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="sleepReportBtn">Perform Analysis</button>
       <div id="sleepReportOutput" style="display:none;margin-top:14px;">
         <div id="sleepReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;"></div>
@@ -781,7 +781,7 @@
         <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;flex:1;">Stress & Mental</div>
         <button onclick="toggleReportDetail('detail-stress')" style="width:20px;height:20px;border-radius:50%;background:#BF9C7C;color:white;border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">i</button>
       </div>
-      <div id="info5" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(191,156,124,0.08);border-radius:6px;line-height:1.6;">Analyzes stress logs for morning, afternoon, and evening patterns — rated by time-of-day distribution and intensity.</div>
+      <div id="info5" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(191,156,124,0.08);border-radius:6px;line-height:1.6;">Analyzes stress and mental state entries for overall load, mood patterns, stress triggers, and recovery — rated against your area of focus.</div>
       <button onclick="generateCategoryReport('stress')" style="width:100%;padding:9px;background:#BF9C7C;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="stressReportBtn">Perform Analysis</button>
       <div id="stressReportOutput" style="display:none;margin-top:14px;">
         <div id="stressReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;"></div>
@@ -795,7 +795,7 @@
         <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;color:#111;text-transform:uppercase;font-weight:700;flex:1;">Recovery Model</div>
         <button onclick="toggleReportDetail('detail-substance')" style="width:20px;height:20px;border-radius:50%;background:#BF7C9C;color:white;border:none;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">i</button>
       </div>
-      <div id="info6" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(191,124,156,0.08);border-radius:6px;line-height:1.6;">Analyzes add-on/substance entries for possible positive or negative impacts relative to your Area of Focus.</div>
+      <div id="info6" style="display:none;visibility:hidden;height:0;overflow:hidden;font-family:'DM Mono',monospace;font-size:10px;color:#777;margin-bottom:12px;padding:8px 10px;background:rgba(191,124,156,0.08);border-radius:6px;line-height:1.6;">Analyzes recovery model entries — muscle soreness, mental readiness, and physical readiness scores — to assess how well you recover between events.</div>
       <button onclick="generateCategoryReport('substance')" style="width:100%;padding:9px;background:#BF7C9C;color:white;border:none;border-radius:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;" id="substanceReportBtn">Perform Analysis</button>
       <div id="substanceReportOutput" style="display:none;margin-top:14px;">
         <div id="substanceReportBody" style="background:white;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:14px;"></div>
@@ -966,9 +966,9 @@ function showSubTab(name) {
 
   function getBarValues() {
     return {
-      ok: parseInt(document.getElementById("okSlider").value) || 7,
-      good: parseInt(document.getElementById("goodSlider").value) || 7,
-      strong: parseInt(document.getElementById("strongSlider").value) || 6,
+      ok:     parseInt(document.getElementById("okSlider").value)     || 5,
+      good:   parseInt(document.getElementById("goodSlider").value)   || 5,
+      strong: parseInt(document.getElementById("strongSlider").value) || 5,
     };
   }
 
@@ -1014,7 +1014,7 @@ function showSubTab(name) {
   function xToVal(bar, clientX) {
     const rect = bar.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    return Math.round(pct * 20);
+    return Math.round(pct * 15);
   }
 
   window.rangeBarDown = function(e) {
@@ -1033,7 +1033,7 @@ function showSubTab(name) {
     if (!dragging) return;
     const bar = document.getElementById("rangeBar");
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const v = Math.max(1, Math.min(19, xToVal(bar, clientX)));
+    const v = Math.max(1, Math.min(14, xToVal(bar, clientX)));
     const { ok, good, strong } = getBarValues();
 
     if (dragging === "h1") {
@@ -1065,9 +1065,9 @@ function showSubTab(name) {
 })();
 
 function updateRangeSliders() {
-  const ok = parseInt(document.getElementById("okSlider").value) || 7;
-  const good = parseInt(document.getElementById("goodSlider").value) || 7;
-  const strong = parseInt(document.getElementById("strongSlider").value) || 6;
+  const ok = parseInt(document.getElementById("okSlider").value) || 5;
+  const good = parseInt(document.getElementById("goodSlider").value) || 5;
+  const strong = parseInt(document.getElementById("strongSlider").value) || 5;
   // Re-render bar if it exists, otherwise just update counts
   if (document.getElementById("rangeBar")) {
     const total = 15;
@@ -3417,69 +3417,80 @@ function downloadFoodReport() {
 const REPORT_CONFIG = {
   sleep: {
     btn: "sleepReportBtn", body: "sleepReportBody", output: "sleepReportOutput", detailId: "detail-sleep",
-    color: "#7C9CBF", label: "Sleep & Recovery",
+    color: "#7C9CBF", label: "Sleep Quality",
     elements: ["Last food/drink before bed", "Bedtime (start time in bed)", "Wake-up time & duration", "HRV / recovery quality"],
-    prompt: (entries, aof) => `You are a sleep and recovery specialist. Analyze these sleep journal entries and return ONLY valid JSON.
-${aof ? `User's area of focus: "${aof}".` : ""}
+    prompt: (entries, aof) => `You are a sleep performance specialist. Analyze these sleep journal entries against the following key principles and return ONLY valid JSON.${aof ? ` User's area of focus: "${aof}".` : ""}
 
-Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK:
+Users log: last meal time before bed, time they got into bed, and hours slept. Use this to assess each principle below.
+
+Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK. ratingColor: STRONG=#7ABF3A, MODERATE=#E8A838, NEEDS WORK=#D95B5B:
 {
   "score": 70,
   "scoreLabel": "Moderate",
   "categories": [
-    { "title": "Last Food/Drink Before Bed", "color": "#7C9CBF", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["specific finding from logs"], "recommendations": ["actionable tip"] },
-    { "title": "Bedtime Consistency", "color": "#5B8DD9", "rating": "NEEDS WORK", "ratingColor": "#D95B5B", "observations": ["finding"], "recommendations": ["tip"] },
-    { "title": "Wake Time & Duration", "color": "#9C7CBF", "rating": "STRONG", "ratingColor": "#7ABF3A", "observations": ["finding"], "recommendations": ["tip"] },
-    { "title": "HRV & Recovery Quality", "color": "#3A9A9A", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["finding"], "recommendations": ["tip"] }
+    { "title": "Last Meal Before Bed", "color": "#7C9CBF", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["Reference actual logged meal times — was last meal 2-3hrs before bed?"], "recommendations": ["specific actionable tip"] },
+    { "title": "Bedtime Consistency", "color": "#5B8DD9", "rating": "NEEDS WORK", "ratingColor": "#D95B5B", "observations": ["Was bedtime early and consistent? Ideal before 10pm."], "recommendations": ["tip"] },
+    { "title": "Sleep Duration", "color": "#9C7CBF", "rating": "STRONG", "ratingColor": "#7ABF3A", "observations": ["How many hours logged? 7-9hrs is optimal for performance recovery."], "recommendations": ["tip"] },
+    { "title": "Sleep Quality Signals", "color": "#3A9A9A", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["Any notes on HRV, restlessness, waking in the night, or how rested they felt?"], "recommendations": ["tip"] }
   ],
-  "summary": "One paragraph of prioritized next steps."
+  "summary": "One paragraph focused on which sleep habits most need improving to support ${aof || "their area of focus"}."
 }
 
-SLEEP ENTRIES (${entries.length}):
+SLEEP QUALITY ENTRIES (${entries.length}):
 ${entries.map(e => `[${new Date(e.ts).toLocaleDateString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}] ${e.note}`).join("\n")}`
   },
   stress: {
     btn: "stressReportBtn", body: "stressReportBody", output: "stressReportOutput", detailId: "detail-stress",
     color: "#BF9C7C", label: "Stress & Mental",
     elements: ["Morning stress patterns", "Afternoon stress patterns", "Evening stress patterns"],
-    prompt: (entries, aof) => `You are a mental wellness and performance psychologist. Analyze these stress/mental journal entries and return ONLY valid JSON.
-${aof ? `User's area of focus: "${aof}".` : ""}
+    prompt: (entries, aof) => `You are a performance psychologist. Analyze these stress and mental state journal entries and return ONLY valid JSON.${aof ? ` User's area of focus: "${aof}".` : ""}
 
-Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK:
+Users log: a stress/mental state rating and contributing factors. Assess each principle below and how stress patterns impact performance.
+
+Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK. ratingColor: STRONG=#7ABF3A, MODERATE=#E8A838, NEEDS WORK=#D95B5B:
 {
   "score": 65,
   "scoreLabel": "Moderate",
   "categories": [
-    { "title": "Morning Stress Patterns", "color": "#BF9C7C", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["specific finding"], "recommendations": ["tip"] },
-    { "title": "Afternoon Stress Patterns", "color": "#E8A838", "rating": "NEEDS WORK", "ratingColor": "#D95B5B", "observations": ["finding"], "recommendations": ["tip"] },
-    { "title": "Evening Stress Patterns", "color": "#9C7CBF", "rating": "STRONG", "ratingColor": "#7ABF3A", "observations": ["finding"], "recommendations": ["tip"] }
+    { "title": "Overall Stress Load", "color": "#BF9C7C", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["Reference actual logged stress levels and contributing factors"], "recommendations": ["specific actionable tip"] },
+    { "title": "Mental State & Mood", "color": "#E8A838", "rating": "NEEDS WORK", "ratingColor": "#D95B5B", "observations": ["Positive or negative mental state patterns noted in logs?"], "recommendations": ["tip"] },
+    { "title": "Stress Triggers", "color": "#9C7CBF", "rating": "STRONG", "ratingColor": "#7ABF3A", "observations": ["What specific factors are driving stress? Work, training load, life events?"], "recommendations": ["tip"] },
+    { "title": "Recovery From Stress", "color": "#3A9A9A", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["Are there signs of stress management or recovery between events?"], "recommendations": ["tip"] }
   ],
-  "summary": "One paragraph of prioritized next steps."
+  "summary": "One paragraph focused on which stress patterns most impact ${aof || "their area of focus"} and what to address first."
 }
 
-STRESS/MENTAL ENTRIES (${entries.length}):
+STRESS & MENTAL ENTRIES (${entries.length}):
 ${entries.map(e => `[${new Date(e.ts).toLocaleDateString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}] ${e.note}`).join("\n")}`
   },
   substance: {
     btn: "substanceReportBtn", body: "substanceReportBody", output: "substanceReportOutput", detailId: "detail-substance",
-    color: "#BF7C9C", label: "Add-Ons",
+    color: "#BF7C9C", label: "Recovery Model",
     elements: ["Positive impacts on area of focus", "Negative or neutral impacts", "Timing & patterns"],
-    prompt: (entries, aof) => `You are a functional medicine specialist. Analyze these add-on/substance journal entries for possible positive or negative impacts${aof ? ` on the user's area of focus: "${aof}"` : ""}. Return ONLY valid JSON.
+    prompt: (entries, aof) => `You are a sports recovery specialist. Analyze these recovery model journal entries and return ONLY valid JSON.${aof ? ` User's area of focus: "${aof}".` : ""}
 
-Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK:
+Users log recovery assessments 24-48hrs after strenuous events. Entries include notes and scored ratings (1-5) for: Muscle Soreness, Mentally Ready to Go, and Physically Ready to Go.
+
+Assess the following recovery principles based strictly on the logged data:
+
+Return this exact structure - rating must be exactly STRONG, MODERATE, or NEEDS WORK. ratingColor: STRONG=#7ABF3A, MODERATE=#E8A838, NEEDS WORK=#D95B5B:
 {
   "score": 60,
   "scoreLabel": "Moderate",
   "categories": [
-    { "title": "Positive Impact Signals", "color": "#7ABF3A", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["specific finding referencing actual entries"], "recommendations": ["tip"] },
-    { "title": "Negative / Neutral Signals", "color": "#D95B5B", "rating": "NEEDS WORK", "ratingColor": "#D95B5B", "observations": ["finding"], "recommendations": ["tip"] },
-    { "title": "Timing & Usage Patterns", "color": "#BF7C9C", "rating": "STRONG", "ratingColor": "#7ABF3A", "observations": ["finding"], "recommendations": ["tip"] }
+    { "title": "Muscle Soreness Recovery", "color": "#BF7C9C", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["Reference logged Muscle Soreness scores — how quickly is soreness resolving?"], "recommendations": ["specific actionable tip"] },
+    { "title": "Mental Readiness", "color": "#9C7CBF", "rating": "STRONG", "ratingColor": "#7ABF3A", "observations": ["Reference logged Mentally Ready to Go scores — is mental recovery tracking well?"], "recommendations": ["tip"] },
+    { "title": "Physical Readiness", "color": "#5B8DD9", "rating": "NEEDS WORK", "ratingColor": "#D95B5B", "observations": ["Reference logged Physically Ready to Go scores — is the body recovering adequately?"], "recommendations": ["tip"] },
+    { "title": "Recovery Consistency", "color": "#3A9A9A", "rating": "MODERATE", "ratingColor": "#E8A838", "observations": ["Is the user doing recovery assessments consistently 24-48hrs post-event?"], "recommendations": ["tip"] }
   ],
-  "summary": "One paragraph of prioritized next steps."
+  "summary": "One paragraph focused on recovery patterns and what to adjust to improve readiness for ${aof || "their area of focus"}."
 }
 
-ADD-ON ENTRIES (${entries.length}):
-${entries.map(e => `[${new Date(e.ts).toLocaleDateString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}] ${e.note}`).join("\n")}`
+RECOVERY MODEL ENTRIES (${entries.length}):
+${entries.map(e => {
+  const scores = e.recoveryScores ? Object.entries(e.recoveryScores).map(([k,v])=>`${k}=${v}/5`).join(", ") : "";
+  return `[${new Date(e.ts).toLocaleDateString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}] ${e.note||""}${scores ? " | Scores: "+scores : ""}`;
+}).join("\n")}`
   }
 };
 
@@ -3584,10 +3595,10 @@ async function generateFocalReport(silent=false) {
 
   const eventBlocks = focalEvents.map((e, i) => {
     const scores = Object.entries(e.scores || {}).map(([k, v]) => `${k}: ${v}`).join(", ");
-    return `Event ${i+1} [${new Date(e.ts).toLocaleDateString([],{month:"short",day:"numeric"})}] Total: ${getTotalScore(e)}/20\n  Scores: ${scores}\n  Notes: ${e.note || "—"}`;
+    return `Event ${i+1} [${new Date(e.ts).toLocaleDateString([],{month:"short",day:"numeric"})}] Total: ${getTotalScore(e)}/15\n  Scores: ${scores}\n  Notes: ${e.note || "—"}`;
   }).join("\n\n");
 
-  const prompt = `You are a human performance specialist. Analyze these ${rangeLabel} focal events${aof ? ` for someone focused on: "${aof}"` : ""}. Return ONLY valid JSON.
+  const prompt = `You are a human performance specialist. Analyze these ${rangeLabel} focal events (scored out of 15) for someone${aof ? ` focused on: "${aof}"` : ""}. Return ONLY valid JSON.
 
 Rate each element exactly STRONG, MODERATE, or NEEDS WORK. ratingColor: STRONG=#7ABF3A, MODERATE=#E8A838, NEEDS WORK=#D95B5B.
 {
